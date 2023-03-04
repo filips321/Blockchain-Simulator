@@ -1,0 +1,2 @@
+class Block:
+    blockMaxSize: int
