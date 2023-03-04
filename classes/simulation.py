@@ -44,12 +44,12 @@ class Simulation:
     def defineMissingNeighbors(self):
         tempNodes = self.nodes.copy()
         for node in self.nodes:
-            self.deleteFromListById(tempNodes, node.nodeId)
             while len(node.neighbors) < self.numberOfNeighbors:
                 neighbor = random.choice(tempNodes)
-                node.neighbors.append(neighbor)
-                self.nodes[neighbor.nodeID].append(node)
-                tempNodes.remove(neighbor)
+                if node != neighbor:
+                    node.neighbors.append(neighbor)
+                    self.nodes[neighbor.nodeId].neighbors.append(node)
+                    tempNodes.remove(neighbor)
 
     def deleteFromListById(self, list, id):
         for i in list:
@@ -88,7 +88,7 @@ class Simulation:
 
         # poczatek symulacji - generowanie wezlow, pierwsze zdarzenie nowej transakcji, pierwsze zdarzenie nowego bloku
         self.generateNodes()
-        self.defineNeighbors()
+        self.defineNeighbors() # TODO - moze sie zapetlac i nie bedzie polaczenia miedzy wszystkimi wezlami (szczegolnie widoczne dla 2 sasiadow)
         self.queue.events.append(self.scheduleNewTransactionEvent(currentTime))
         self.queue.events.append(self.scheduleNewBlockEvent(currentTime, self.findShortestMiningTime()))
 
