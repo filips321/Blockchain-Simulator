@@ -16,6 +16,7 @@ class Simulation:
     nodes = []
     queue: Queue
 
+
     def __init__(self, simulationTime, numberOfNodes, numberOfNeighbors, averageTransactionsBreak, averagePowPosTime):
         self.simulationTime = simulationTime
         self.numberOfNodes = numberOfNodes
@@ -23,11 +24,13 @@ class Simulation:
         self.averageTransactionBreak = averageTransactionsBreak
         self.averagePowPosTime = averagePowPosTime
 
+
     def generateNodes(self, nodes, numberOfNodes, averagePowPosTime):
         for i in range(numberOfNodes):
             generatedNode = Node(i, 'xd', averagePowPosTime, []) # TODO - ustawic typy wezlow
             nodes.append(generatedNode)
         return nodes
+
 
     def defineNeighbors(self, nodes, numberOfNeighbors):
         tempNodes = nodes.copy()
@@ -44,6 +47,7 @@ class Simulation:
         nodes = self.defineMissingNeighbors(nodes, numberOfNeighbors)
         return nodes
 
+
     def defineMissingNeighbors(self, nodes, numberOfNeighbors):
         tempNodes = nodes.copy()
         for node in nodes:
@@ -55,11 +59,13 @@ class Simulation:
                     tempNodes.remove(neighbor)
         return nodes
 
+
     def deleteFromListById(self, list, id):
         for i in list:
             if i.nodeId == id:
                 list.remove(i)
         return list
+
 
     def deleteCompleteNeighborsNodes(self, tempNodes, numberOfNeighbors):
         for i in tempNodes:
@@ -67,23 +73,25 @@ class Simulation:
                 tempNodes.remove(i)
         return tempNodes
 
-    def scheduleNewTransactionEvent(self, time):
-        transactionEvent = Event('newTransaction',
-                                 time + self.averageTransactionBreak)  # TODO - generowac przerwe miedzy rozkladami losowo (np. rozklad wykladniczy)
+
+    def scheduleNewTransactionEvent(self, time, averageTransactionBreak):
+        transactionEvent = Event(time, 'newTransaction', time + averageTransactionBreak * random.uniform(0.5, 1.5))  # TODO - generowac przerwe miedzy rozkladami losowo (np. rozklad wykladniczy)
         return transactionEvent
 
-    def findShortestMiningTime(self):
+
+    def findShortestMiningTime(self, nodes):
         miningTimes = []
-        for i in self.nodes:
+        for i in nodes:
             miningTime = i.declareMiningTime()
             miningTimes.append(miningTime)
         shortestMiningTime = min(miningTimes)
         return shortestMiningTime
 
+
     def scheduleNewBlockEvent(self, time, shortestMiningTime):
-        blockEvent = Event('newBlock',
-                           time + shortestMiningTime)  # TODO - generowac przerwe miedzy rozkladami losowo (np. rozklad wykladniczy)
+        blockEvent = Event(time, 'newBlock', time + shortestMiningTime)  # TODO - generowac przerwe miedzy rozkladami losowo (np. rozklad wykladniczy)
         return blockEvent
+
 
     def startSimulation(self):
         # ustawienie stanu poczatkowego symulacji
@@ -94,8 +102,8 @@ class Simulation:
         self.nodes = self.generateNodes(self.nodes, self.numberOfNodes, self.averagePowPosTime)
         self.nodes = self.defineNeighbors(self.nodes, self.numberOfNeighbors) # TODO - moze sie zapetlac i nie bedzie polaczenia miedzy wszystkimi wezlami (szczegolnie widoczne dla 2 sasiadow)
 
-        self.queue.events.append(self.scheduleNewTransactionEvent(currentTime))
-        self.queue.events.append(self.scheduleNewBlockEvent(currentTime, self.findShortestMiningTime()))
+        self.queue.events.append(self.scheduleNewTransactionEvent(currentTime, self.averageTransactionBreak))
+        self.queue.events.append(self.scheduleNewBlockEvent(currentTime, self.findShortestMiningTime(self.nodes)))
 
         # glowna petla symulacji
         while currentTime < self.simulationTime:
@@ -106,14 +114,12 @@ class Simulation:
 
             match currentEvent.eventType:
                 case 'newTransaction':
-                    self.queue.events.append(self.scheduleNewTransactionEvent(currentTime))
+                    self.queue.events.append(self.scheduleNewTransactionEvent(currentTime, self.averageTransactionBreak))
                     # zaczac propagowac transakcje
-                    print('hi trans')
                 case 'newBlock':
-                    self.queue.events.append(self.scheduleNewBlockEvent(currentTime, self.findShortestMiningTime()))
+                    self.queue.events.append(self.scheduleNewBlockEvent(currentTime, self.findShortestMiningTime(self.nodes)))
                     # zapelnic blok transakcjami
                     # zaczac propagowac blok
-                    print('hi block')
                 case 'propagateTransaction':
                     # propagowac transakcje dalej
                     # zaaktualizowac liste dostepnych transakcji do wziecia dla gornikow

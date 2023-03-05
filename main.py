@@ -13,6 +13,8 @@ averagePowPosTime = 10
 
 if __name__ == '__main__':
 
+    print('')
+    print('---------------SIMULATION LOGS---------------')
     simulation = simulation.Simulation(simulationTime, numberOfNodes, numberOfNeighbors, averageTransactionsBreak, averagePowPosTime)
     simulation.startSimulation()
 
@@ -24,9 +26,8 @@ if __name__ == '__main__':
         return string
 
 # testing - printing
+    print('')
+    print('---------------TESTING---------------')
+
     for i in simulation.nodes:
         print('[ID ' + str(i.nodeId) + '] Node - x: ' + str(i.xGeography) + ', y: ' + str(i.yGeography) + ', neighbors: ' + printNeighbors(i))
-
-    for i in simulation.queue.events:
-        print(i.eventType, i.eventTime)
-
