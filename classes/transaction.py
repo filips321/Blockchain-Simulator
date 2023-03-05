@@ -1,5 +1,6 @@
 from .node import Node
 
+
 class Transaction:
     transactionSize: int
     transactionCreationTime: float

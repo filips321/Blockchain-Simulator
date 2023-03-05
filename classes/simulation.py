@@ -1,8 +1,6 @@
 import random
-
 from .node import Node
 from .queue import Queue
-from .transaction import Transaction
 from .event import Event
 
 
@@ -12,10 +10,8 @@ class Simulation:
     numberOfNeighbors: int
     averagePowPosTime: float
     averageTransactionBreak: float
-
     nodes = []
     queue: Queue
-
 
     def __init__(self, simulationTime, numberOfNodes, numberOfNeighbors, averageTransactionsBreak, averagePowPosTime):
         self.simulationTime = simulationTime
@@ -24,13 +20,11 @@ class Simulation:
         self.averageTransactionBreak = averageTransactionsBreak
         self.averagePowPosTime = averagePowPosTime
 
-
     def generateNodes(self, nodes, numberOfNodes, averagePowPosTime):
         for i in range(numberOfNodes):
-            generatedNode = Node(i, 'xd', averagePowPosTime, []) # TODO - ustawic typy wezlow
+            generatedNode = Node(i, 'xd', averagePowPosTime, [])  # TODO - ustawic typy wezlow
             nodes.append(generatedNode)
         return nodes
-
 
     def defineNeighbors(self, nodes, numberOfNeighbors):
         tempNodes = nodes.copy()
@@ -40,13 +34,13 @@ class Simulation:
                 if len(tempNodes) == 0:
                     break
                 potentialNeighbor = random.choice(tempNodes)
-                if len(node.neighbors) < numberOfNeighbors and len(potentialNeighbor.neighbors) < numberOfNeighbors and potentialNeighbor not in node.neighbors:
+                if len(node.neighbors) < numberOfNeighbors and len(
+                        potentialNeighbor.neighbors) < numberOfNeighbors and potentialNeighbor not in node.neighbors:
                     node.neighbors.append(potentialNeighbor)
                     nodes[potentialNeighbor.nodeId].neighbors.append(node)
                     tempNodes = self.deleteCompleteNeighborsNodes(tempNodes, numberOfNeighbors)
         nodes = self.defineMissingNeighbors(nodes, numberOfNeighbors)
         return nodes
-
 
     def defineMissingNeighbors(self, nodes, numberOfNeighbors):
         tempNodes = nodes.copy()
@@ -59,13 +53,11 @@ class Simulation:
                     tempNodes.remove(neighbor)
         return nodes
 
-
     def deleteFromListById(self, list, id):
         for i in list:
             if i.nodeId == id:
                 list.remove(i)
         return list
-
 
     def deleteCompleteNeighborsNodes(self, tempNodes, numberOfNeighbors):
         for i in tempNodes:
@@ -73,25 +65,24 @@ class Simulation:
                 tempNodes.remove(i)
         return tempNodes
 
-
-    def scheduleNewTransactionEvent(self, time, averageTransactionBreak):
-        transactionEvent = Event(time, 'newTransaction', time + averageTransactionBreak * random.uniform(0.5, 1.5))  # TODO - generowac przerwe miedzy rozkladami losowo (np. rozklad wykladniczy)
+    def scheduleNewTransactionEvent(self, time, averageTransactionBreak, nodes):
+        transactionEvent = Event(time, 'newTransaction', time + averageTransactionBreak * random.uniform(0.5, 1.5),
+                                 random.choice(
+                                     nodes))  # TODO - generowac przerwe miedzy rozkladami losowo (np. rozklad wykladniczy)
         return transactionEvent
-
 
     def findShortestMiningTime(self, nodes):
         miningTimes = []
         for i in nodes:
             miningTime = i.declareMiningTime()
-            miningTimes.append(miningTime)
-        shortestMiningTime = min(miningTimes)
+            miningTimes.append((i, miningTime))
+        shortestMiningTime = min(miningTimes, key=lambda x: x[1])
         return shortestMiningTime
 
-
     def scheduleNewBlockEvent(self, time, shortestMiningTime):
-        blockEvent = Event(time, 'newBlock', time + shortestMiningTime)  # TODO - generowac przerwe miedzy rozkladami losowo (np. rozklad wykladniczy)
+        blockEvent = Event(time, 'newBlock', time + shortestMiningTime[1], shortestMiningTime[
+            0])  # TODO - generowac przerwe miedzy rozkladami losowo (np. rozklad wykladniczy)
         return blockEvent
-
 
     def startSimulation(self):
         # ustawienie stanu poczatkowego symulacji
@@ -100,9 +91,11 @@ class Simulation:
 
         # poczatek symulacji - generowanie wezlow, pierwsze zdarzenie nowej transakcji, pierwsze zdarzenie nowego bloku
         self.nodes = self.generateNodes(self.nodes, self.numberOfNodes, self.averagePowPosTime)
-        self.nodes = self.defineNeighbors(self.nodes, self.numberOfNeighbors) # TODO - moze sie zapetlac i nie bedzie polaczenia miedzy wszystkimi wezlami (szczegolnie widoczne dla 2 sasiadow)
+        self.nodes = self.defineNeighbors(self.nodes,
+                                          self.numberOfNeighbors)  # TODO - moze sie zapetlac i nie bedzie polaczenia miedzy wszystkimi wezlami (szczegolnie widoczne dla 2 sasiadow)
 
-        self.queue.events.append(self.scheduleNewTransactionEvent(currentTime, self.averageTransactionBreak))
+        self.queue.events.append(
+            self.scheduleNewTransactionEvent(currentTime, self.averageTransactionBreak, self.nodes))
         self.queue.events.append(self.scheduleNewBlockEvent(currentTime, self.findShortestMiningTime(self.nodes)))
 
         # glowna petla symulacji
@@ -114,10 +107,13 @@ class Simulation:
 
             match currentEvent.eventType:
                 case 'newTransaction':
-                    self.queue.events.append(self.scheduleNewTransactionEvent(currentTime, self.averageTransactionBreak))
+                    self.queue.events.append(
+                        self.scheduleNewTransactionEvent(currentTime, self.averageTransactionBreak, self.nodes))
                     # zaczac propagowac transakcje
                 case 'newBlock':
-                    self.queue.events.append(self.scheduleNewBlockEvent(currentTime, self.findShortestMiningTime(self.nodes)))
+                    self.queue.events.append(
+                        self.scheduleNewBlockEvent(currentTime, self.findShortestMiningTime(
+                            self.nodes)))  # TODO - wezly powinny deklarowac kiedy stworza nowy blok dopiero w momencie gdy dostana spropagowane info o nowym bloku od nowego wezla
                     # zapelnic blok transakcjami
                     # zaczac propagowac blok
                 case 'propagateTransaction':

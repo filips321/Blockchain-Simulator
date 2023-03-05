@@ -6,4 +6,3 @@ class Queue:
 
     def deleteEvent(self, event):
         self.events.remove(event)
-
