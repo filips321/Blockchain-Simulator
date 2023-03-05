@@ -12,6 +12,7 @@ class Simulation:
     numberOfNeighbors: int
     averagePowPosTime: float
     averageTransactionBreak: float
+
     nodes = []
     queue: Queue
 
@@ -22,34 +23,37 @@ class Simulation:
         self.averageTransactionBreak = averageTransactionsBreak
         self.averagePowPosTime = averagePowPosTime
 
-    def generateNodes(self):
-        for i in range(self.numberOfNodes):
-            generatedNode = Node(i, 'xd', self.averagePowPosTime, [])
-            self.nodes.append(generatedNode)
+    def generateNodes(self, nodes, numberOfNodes, averagePowPosTime):
+        for i in range(numberOfNodes):
+            generatedNode = Node(i, 'xd', averagePowPosTime, []) # TODO - ustawic typy wezlow
+            nodes.append(generatedNode)
+        return nodes
 
-    def defineNeighbors(self):
-        tempNodes = self.nodes.copy()
-        for node in self.nodes:
+    def defineNeighbors(self, nodes, numberOfNeighbors):
+        tempNodes = nodes.copy()
+        for node in nodes:
             self.deleteFromListById(tempNodes, node.nodeId)
-            while len(node.neighbors) < self.numberOfNeighbors:
+            while len(node.neighbors) < numberOfNeighbors:
                 if len(tempNodes) == 0:
                     break
                 potentialNeighbor = random.choice(tempNodes)
-                if len(node.neighbors) < self.numberOfNeighbors and len(potentialNeighbor.neighbors) < self.numberOfNeighbors and potentialNeighbor not in node.neighbors:
+                if len(node.neighbors) < numberOfNeighbors and len(potentialNeighbor.neighbors) < numberOfNeighbors and potentialNeighbor not in node.neighbors:
                     node.neighbors.append(potentialNeighbor)
-                    self.nodes[potentialNeighbor.nodeId].neighbors.append(node)
-                    tempNodes = self.deleteCompleteNeighborsNodes(tempNodes)
-        self.defineMissingNeighbors()
+                    nodes[potentialNeighbor.nodeId].neighbors.append(node)
+                    tempNodes = self.deleteCompleteNeighborsNodes(tempNodes, numberOfNeighbors)
+        nodes = self.defineMissingNeighbors(nodes, numberOfNeighbors)
+        return nodes
 
-    def defineMissingNeighbors(self):
-        tempNodes = self.nodes.copy()
-        for node in self.nodes:
-            while len(node.neighbors) < self.numberOfNeighbors:
+    def defineMissingNeighbors(self, nodes, numberOfNeighbors):
+        tempNodes = nodes.copy()
+        for node in nodes:
+            while len(node.neighbors) < numberOfNeighbors:
                 neighbor = random.choice(tempNodes)
                 if node != neighbor:
                     node.neighbors.append(neighbor)
-                    self.nodes[neighbor.nodeId].neighbors.append(node)
+                    nodes[neighbor.nodeId].neighbors.append(node)
                     tempNodes.remove(neighbor)
+        return nodes
 
     def deleteFromListById(self, list, id):
         for i in list:
@@ -57,11 +61,11 @@ class Simulation:
                 list.remove(i)
         return list
 
-    def deleteCompleteNeighborsNodes(self, nodeList):
-        for i in nodeList:
-            if len(i.neighbors) >= self.numberOfNeighbors:
-                nodeList.remove(i)
-        return nodeList
+    def deleteCompleteNeighborsNodes(self, tempNodes, numberOfNeighbors):
+        for i in tempNodes:
+            if len(i.neighbors) >= numberOfNeighbors:
+                tempNodes.remove(i)
+        return tempNodes
 
     def scheduleNewTransactionEvent(self, time):
         transactionEvent = Event('newTransaction',
@@ -87,8 +91,9 @@ class Simulation:
         self.queue = Queue()
 
         # poczatek symulacji - generowanie wezlow, pierwsze zdarzenie nowej transakcji, pierwsze zdarzenie nowego bloku
-        self.generateNodes()
-        self.defineNeighbors() # TODO - moze sie zapetlac i nie bedzie polaczenia miedzy wszystkimi wezlami (szczegolnie widoczne dla 2 sasiadow)
+        self.nodes = self.generateNodes(self.nodes, self.numberOfNodes, self.averagePowPosTime)
+        self.nodes = self.defineNeighbors(self.nodes, self.numberOfNeighbors) # TODO - moze sie zapetlac i nie bedzie polaczenia miedzy wszystkimi wezlami (szczegolnie widoczne dla 2 sasiadow)
+
         self.queue.events.append(self.scheduleNewTransactionEvent(currentTime))
         self.queue.events.append(self.scheduleNewBlockEvent(currentTime, self.findShortestMiningTime()))
 
