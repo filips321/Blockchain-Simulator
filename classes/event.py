@@ -1,21 +1,27 @@
 from .node import Node
+from .transaction import Transaction
 
 
 class Event:
     eventType: str  # newBlock / newTransaction / propagateTransaction / propagateBlock
     eventTime: float
-    startingNode: Node
+    node: Node
     currentTime: float
+    transaction: Transaction
 
-    def __init__(self, currentTime, eventType, eventTime, startingNode):
+    def __init__(self, currentTime, eventType, eventTime, node):
         self.currentTime = currentTime
         self.eventType = eventType
         self.eventTime = eventTime
-        self.startingNode = startingNode
+        self.node = node
 
         self.printEventInfo()
 
     def printEventInfo(self):
-        print('[' + str(
-            round(self.currentTime, 2)) + ']' + ' NEW EVENT SCHEDULED - type: ' + self.eventType + ', time: ' + str(
-            round(self.eventTime, 2)) + ', starting node: ' + str(self.startingNode.nodeId))
+        match self.eventType:
+            case 'newBlock':
+                print('[' + str(round(self.currentTime, 2)) + ']' + ' NEW EVENT SCHEDULED - type: ' + self.eventType + ', time: ' + str(round(self.eventTime, 2)) + ', starting node: ' + str(self.node.nodeId))
+            case 'newTransaction':
+                print('[' + str(round(self.currentTime, 2)) + ']' + ' NEW EVENT SCHEDULED - type: ' + self.eventType + ', time: ' + str(round(self.eventTime, 2)))
+            case _:
+                print('NO PRINT EVENT INFO')

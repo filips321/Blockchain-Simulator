@@ -9,6 +9,7 @@ class Node:
     xGeography = 0
     yGeography = 0
     neighbors = []
+    availableTransactions = []
 
     def __init__(self, nodeId, nodeType, averagePowPosTime, neighbors):
         self.nodeId = nodeId
@@ -27,6 +28,5 @@ class Node:
                 return xTemp, yTemp
 
     def declareMiningTime(self):
-        miningTime = self.averagePowPosTime * random.uniform(0.5,
-                                                             1.5)  # TODO - generowac na podstawie np. rozkladu wykladniczego
+        miningTime = self.averagePowPosTime * random.uniform(0.5, 1.5)  # TODO - generowac na podstawie np. rozkladu wykladniczego
         return miningTime
