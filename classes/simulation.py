@@ -79,16 +79,16 @@ class Simulation:
         shortestMiningTime = min(miningTimes, key=lambda x: x[1])
         return shortestMiningTime
 
-    def scheduleNewTransactionEvent(self, time, averageTransactionBreak, nodes):
-        transactionEvent = Event(time, 'newTransaction', time + averageTransactionBreak * random.uniform(0.5, 1.5), random.choice(nodes))  # TODO - generowac przerwe miedzy rozkladami losowo (np. rozklad wykladniczy)
+    def scheduleNewTransactionEvent(self, time, nodes):
+        transactionEvent = Event(time, 'newTransaction', time + self.averageTransactionBreak * random.uniform(0.5, 1.5), random.choice(nodes))  # TODO - generowac przerwe miedzy rozkladami losowo (np. rozklad wykladniczy)
         return transactionEvent
 
     def scheduleNewBlockEvent(self, time, shortestMiningTime):
         blockEvent = Event(time, 'newBlock', time + shortestMiningTime[1], shortestMiningTime[0])  # TODO - generowac przerwe miedzy rozkladami losowo (np. rozklad wykladniczy)
         return blockEvent
 
-    def schedulePropagateTransactionEvent(self, time, transaction, localVerificationLatency, propagationLatency, node):
-        propagateTransactionEvent = Event(time, 'propagateTransaction', time + localVerificationLatency + propagationLatency, node)  # TODO - uzaleznic propagationLatency od odleglosci miedzy sasiadami
+    def schedulePropagateTransactionEvent(self, time, transaction, node):
+        propagateTransactionEvent = Event(time, 'propagateTransaction', time + self.localVerificationLatency + self.propagationLatency, node)  # TODO - uzaleznic propagationLatency od odleglosci miedzy sasiadami
         propagateTransactionEvent.transaction = transaction
         return propagateTransactionEvent
 
@@ -104,7 +104,7 @@ class Simulation:
         self.nodes = self.generateNodes(self.nodes, self.numberOfNodes, self.averagePowPosTime)
         self.nodes = self.defineNeighbors(self.nodes, self.numberOfNeighbors)  # TODO - moze sie zapetlac i nie bedzie polaczenia miedzy wszystkimi wezlami (szczegolnie widoczne dla 2 sasiadow)
 
-        self.queue.events.append(self.scheduleNewTransactionEvent(currentTime, self.averageTransactionBreak, self.nodes))
+        self.queue.events.append(self.scheduleNewTransactionEvent(currentTime, self.nodes))
         self.queue.events.append(self.scheduleNewBlockEvent(currentTime, self.findShortestMiningTime(self.nodes)))
 
         # glowna petla symulacji
@@ -118,17 +118,19 @@ class Simulation:
                 case 'newTransaction':
                     transaction = Transaction(currentTime, self.transactionSize, currentEvent.node)
                     self.nodes[currentEvent.node.nodeId].availableTransactions.append(transaction)  # dodac transakcje do availableTransactions danego wezla
-                    self.queue.events.append(self.schedulePropagateTransactionEvent(currentTime, transaction, self.localVerificationLatency, self.propagationLatency, currentEvent.node))  # zdarzenie propagacji
+                    for neighbor in currentEvent.node.neighbors:
+                        self.queue.events.append(self.schedulePropagateTransactionEvent(currentTime, transaction, neighbor))  # zdarzenie propagacji do kazdego sasiada
 
-                    self.queue.events.append(self.scheduleNewTransactionEvent(currentTime, self.averageTransactionBreak, self.nodes))  # nastepna transakcja
+                    self.queue.events.append(self.scheduleNewTransactionEvent(currentTime, self.nodes))  # nastepna transakcja
                 case 'newBlock':
                     self.queue.events.append(self.scheduleNewBlockEvent(currentTime, self.findShortestMiningTime(self.nodes)))  # TODO - wezly powinny deklarowac kiedy stworza nowy blok dopiero w momencie gdy dostana spropagowane info o nowym bloku od nowego wezla
                     # zapelnic blok transakcjami
                     # zaczac propagowac blok
                 case 'propagateTransaction':
-                    # propagowac transakcje dalej
-                    # zaaktualizowac liste dostepnych transakcji do wziecia dla gornikow
-                    print('')
+                    if not self.nodes[currentEvent.node.nodeId].checkTransactionDuplicate(currentEvent.transaction):  # jezeli tej transakcji nie ma w wezle jeszcze to dodaj do dostepnych transakcji i propaguj dalej
+                        self.nodes[currentEvent.node.nodeId].availableTransactions.append(currentEvent.transaction)
+                        for neighbor in currentEvent.node.neighbors:
+                            self.queue.events.append(self.schedulePropagateTransactionEvent(currentTime, currentEvent.transaction, neighbor))  # zdarzenie propagacji do kazdego sasiada
                 case 'propagateBlock':
                     # propagowac blok dalej
                     # zaaktualizowac blockchain

@@ -30,3 +30,9 @@ class Node:
     def declareMiningTime(self):
         miningTime = self.averagePowPosTime * random.uniform(0.5, 1.5)  # TODO - generowac na podstawie np. rozkladu wykladniczego
         return miningTime
+
+    def checkTransactionDuplicate(self, transaction):
+        if transaction in self.availableTransactions:
+            return True
+        else:
+            return False
