@@ -79,6 +79,11 @@ class Simulation:
         shortestMiningTime = min(miningTimes, key=lambda x: x[1])
         return shortestMiningTime
 
+    def updateAvailableTransactions(self, block, availableTransactions):
+        for transaction in block.transactions:
+            availableTransactions.remove(transaction)
+        return availableTransactions
+
     def scheduleNewTransactionEvent(self, time):
         transactionEvent = Event(time, 'newTransaction', time + self.averageTransactionBreak * random.uniform(0.5, 1.5), random.choice(self.nodes))  # TODO - generowac przerwe miedzy rozkladami losowo (np. rozklad wykladniczy)
         return transactionEvent
@@ -120,15 +125,17 @@ class Simulation:
                 case 'newTransaction':
                     transaction = Transaction(currentTime, self.transactionSize, currentEvent.node)
                     self.nodes[currentEvent.node.nodeId].availableTransactions.append(transaction)  # dodac transakcje do availableTransactions danego wezla
+
                     for neighbor in currentEvent.node.neighbors:
                         self.queue.events.append(self.schedulePropagateTransactionEvent(currentTime, transaction, neighbor))  # zdarzenie propagacji do kazdego sasiada
 
                     self.queue.events.append(self.scheduleNewTransactionEvent(currentTime))  # nastepna transakcja
                 case 'newBlock':
                     block = Block(currentTime, self.blockMaxSize, currentEvent.node)
+                    block.fillWithTransactions(currentEvent.node)  # zapelnia blok transakcjami
                     self.nodes[currentEvent.node.nodeId].blockchain.blockList.append(block)  # dodac block do blockchainu danego wezla
-                    ###################### zapelnic blok transakcjami
-                    ###################### usunac z dostepnych transakcji
+                    self.nodes[currentEvent.node.nodeId].availableTransactions = self.updateAvailableTransactions(block, currentEvent.node.availableTransactions)  # aktualizuje dostepne transakje danego wezla
+
                     for neighbor in currentEvent.node.neighbors:
                         self.queue.events.append(self.schedulePropagateBlockEvent(currentTime, block, neighbor))
 
@@ -141,8 +148,9 @@ class Simulation:
                 case 'propagateBlock':
                     if not self.nodes[currentEvent.node.nodeId].checkBlockDuplicate(currentEvent.block):  # jezeli tego bloku nie ma w blockchainie wezla jeszcze to dodaj i propaguj dalej
                         self.nodes[currentEvent.node.nodeId].blockchain.blockList.append(currentEvent.block)
+                        self.nodes[currentEvent.node.nodeId].availableTransactions = self.updateAvailableTransactions(currentEvent.block, currentEvent.node.availableTransactions)  # aktualizuje dostepne transakje danego wezla
+
                         for neighbor in currentEvent.node.neighbors:
                             self.queue.events.append(self.schedulePropagateBlockEvent(currentTime, currentEvent.block, neighbor))  # zdarzenie propagacji do kazdego sasiada
-                    ##################### usunac z dostepnych transakcji te z bloku
                 case _:
                     print('QUEUE IS EMPTY')
