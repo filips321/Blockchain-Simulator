@@ -81,7 +81,8 @@ class Simulation:
 
     def updateAvailableTransactions(self, block, availableTransactions):
         for transaction in block.transactions:
-            availableTransactions.remove(transaction)
+            if transaction in availableTransactions:
+                availableTransactions.remove(transaction)
         return availableTransactions
 
     def scheduleNewTransactionEvent(self, time):
@@ -132,7 +133,7 @@ class Simulation:
                     self.queue.events.append(self.scheduleNewTransactionEvent(currentTime))  # nastepna transakcja
                 case 'newBlock':
                     block = Block(currentTime, self.blockMaxSize, currentEvent.node)
-                    block.fillWithTransactions(currentEvent.node)  # zapelnia blok transakcjami
+                    block.fillWithTransactions(currentEvent.node.availableTransactions)  # zapelnia blok transakcjami
                     self.nodes[currentEvent.node.nodeId].blockchain.blockList.append(block)  # dodac block do blockchainu danego wezla
                     self.nodes[currentEvent.node.nodeId].availableTransactions = self.updateAvailableTransactions(block, currentEvent.node.availableTransactions)  # aktualizuje dostepne transakje danego wezla
 

@@ -19,6 +19,7 @@ class Node:
         self.averagePowPosTime = averagePowPosTime
         self.xGeography = self.generateLocation()[0]
         self.yGeography = self.generateLocation()[1]
+        self.blockchain = Blockchain()
 
     def generateLocation(
             self):  # TODO - sprawdzic jak generuje, dodac proporcjonalna ilosc uzytkownik per kontynent (np. 0 na antarktydzie, duzo w USA)
