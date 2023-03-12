@@ -24,6 +24,10 @@ class Event:
             case 'newBlock':
                 print('[' + str(round(self.currentTime, 2)) + ']' + ' NEW EVENT SCHEDULED - type: ' + self.eventType + ', time: ' + str(round(self.eventTime, 2)) + ', starting node: ' + str(self.node.nodeId))
             case 'newTransaction':
-                print('[' + str(round(self.currentTime, 2)) + ']' + ' NEW EVENT SCHEDULED - type: ' + self.eventType + ', time: ' + str(round(self.eventTime, 2)))
+                print('[' + str(round(self.currentTime, 2)) + ']' + ' NEW EVENT SCHEDULED - type: ' + self.eventType + ', time: ' + str(round(self.eventTime, 2)) + ', starting node: ' + str(self.node.nodeId))
+            case 'propagateTransaction':
+                print('[' + str(round(self.currentTime, 2)) + ']' + ' NEW EVENT SCHEDULED - type: ' + self.eventType + ', time: ' + str(round(self.eventTime, 2)) + ', starting node: ' + str(self.node.nodeId))
+            case 'propagateBlock':
+                print('[' + str(round(self.currentTime, 2)) + ']' + ' NEW EVENT SCHEDULED - type: ' + self.eventType + ', time: ' + str(round(self.eventTime, 2)) + ', starting node: ' + str(self.node.nodeId))
             case _:
-                print('NO PRINT EVENT INFO')
+                print('UNEXPECTED EVENT')

@@ -1,2 +1,5 @@
 class Blockchain:
-    blockList = []
+    blockList: []
+
+    def __init__(self):
+        self.blockList = []

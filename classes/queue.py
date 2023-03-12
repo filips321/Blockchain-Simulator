@@ -1,5 +1,8 @@
 class Queue:
-    events = []
+    events: []
+
+    def __init__(self):
+        self.events = []
 
     def addEvent(self, event):
         self.events.append(event)

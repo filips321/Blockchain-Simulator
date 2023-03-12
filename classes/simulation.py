@@ -16,7 +16,7 @@ class Simulation:
     localVerificationLatency: int
     transactionSize: int
     blockMaxSize: int
-    nodes = []
+    nodes: []
     queue: Queue
 
     def __init__(self, simulationTime, numberOfNodes, numberOfNeighbors, averageTransactionsBreak, averagePowPosTime, propagationLatency, localVerificationLatency, transactionSize, blockMaxSize):
@@ -29,6 +29,7 @@ class Simulation:
         self.localVerificationLatency = localVerificationLatency
         self.transactionSize = transactionSize
         self.blockMaxSize = blockMaxSize
+        self.nodes = []
 
     def generateNodes(self):
         for i in range(self.numberOfNodes):

@@ -9,9 +9,10 @@ class Node:
     averagePowPosTime = 0
     xGeography = 0
     yGeography = 0
+
+    neighbors: []
+    availableTransactions: []
     blockchain: Blockchain
-    neighbors = []
-    availableTransactions = []
 
     def __init__(self, nodeId, nodeType, averagePowPosTime):
         self.nodeId = nodeId
@@ -19,6 +20,8 @@ class Node:
         self.averagePowPosTime = averagePowPosTime
         self.xGeography = self.generateLocation()[0]
         self.yGeography = self.generateLocation()[1]
+        self.neighbors = []
+        self.availableTransactions = []
         self.blockchain = Blockchain()
 
     def generateLocation(
