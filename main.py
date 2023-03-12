@@ -14,7 +14,7 @@ averagePowPosTime = 10
 if __name__ == '__main__':
     print('')
     print('---------------SIMULATION LOGS---------------')
-    simulation = simulation.Simulation(simulationTime, numberOfNodes, numberOfNeighbors, averageTransactionsBreak, averagePowPosTime, propagationLatency, localVerificationLatency, transactionSize)
+    simulation = simulation.Simulation(simulationTime, numberOfNodes, numberOfNeighbors, averageTransactionsBreak, averagePowPosTime, propagationLatency, localVerificationLatency, transactionSize, blockMaxSize)
     simulation.startSimulation()
 
 

@@ -3,6 +3,7 @@ from .node import Node
 from .queue import Queue
 from .event import Event
 from .transaction import Transaction
+from .block import Block
 
 
 class Simulation:
@@ -14,10 +15,11 @@ class Simulation:
     propagationLatency: int
     localVerificationLatency: int
     transactionSize: int
+    blockMaxSize: int
     nodes = []
     queue: Queue
 
-    def __init__(self, simulationTime, numberOfNodes, numberOfNeighbors, averageTransactionsBreak, averagePowPosTime, propagationLatency, localVerificationLatency, transactionSize):
+    def __init__(self, simulationTime, numberOfNodes, numberOfNeighbors, averageTransactionsBreak, averagePowPosTime, propagationLatency, localVerificationLatency, transactionSize, blockMaxSize):
         self.simulationTime = simulationTime
         self.numberOfNodes = numberOfNodes
         self.numberOfNeighbors = numberOfNeighbors
@@ -26,38 +28,36 @@ class Simulation:
         self.propagationLatency = propagationLatency
         self.localVerificationLatency = localVerificationLatency
         self.transactionSize = transactionSize
+        self.blockMaxSize = blockMaxSize
 
-    def generateNodes(self, nodes, numberOfNodes, averagePowPosTime):
-        for i in range(numberOfNodes):
-            generatedNode = Node(i, 'xd', averagePowPosTime, [])  # TODO - ustawic typy wezlow
-            nodes.append(generatedNode)
-        return nodes
+    def generateNodes(self):
+        for i in range(self.numberOfNodes):
+            generatedNode = Node(i, 'xd', self.averagePowPosTime)  # TODO - ustawic typy wezlow
+            self.nodes.append(generatedNode)
 
-    def defineNeighbors(self, nodes, numberOfNeighbors):
-        tempNodes = nodes.copy()
-        for node in nodes:
+    def defineNeighbors(self):
+        tempNodes = self.nodes.copy()
+        for node in self.nodes:
             self.deleteFromListById(tempNodes, node.nodeId)
-            while len(node.neighbors) < numberOfNeighbors:
+            while len(node.neighbors) < self.numberOfNeighbors:
                 if len(tempNodes) == 0:
                     break
                 potentialNeighbor = random.choice(tempNodes)
-                if len(node.neighbors) < numberOfNeighbors and len(potentialNeighbor.neighbors) < numberOfNeighbors and potentialNeighbor not in node.neighbors:
+                if len(node.neighbors) < self.numberOfNeighbors and len(potentialNeighbor.neighbors) < self.numberOfNeighbors and potentialNeighbor not in node.neighbors:
                     node.neighbors.append(potentialNeighbor)
-                    nodes[potentialNeighbor.nodeId].neighbors.append(node)
-                    tempNodes = self.deleteCompleteNeighborsNodes(tempNodes, numberOfNeighbors)
-        nodes = self.defineMissingNeighbors(nodes, numberOfNeighbors)
-        return nodes
+                    self.nodes[potentialNeighbor.nodeId].neighbors.append(node)
+                    tempNodes = self.deleteCompleteNeighborsNodes(tempNodes)
+        self.defineMissingNeighbors()
 
-    def defineMissingNeighbors(self, nodes, numberOfNeighbors):
-        tempNodes = nodes.copy()
-        for node in nodes:
-            while len(node.neighbors) < numberOfNeighbors:
+    def defineMissingNeighbors(self):
+        tempNodes = self.nodes.copy()
+        for node in self.nodes:
+            while len(node.neighbors) < self.numberOfNeighbors:
                 neighbor = random.choice(tempNodes)
                 if node != neighbor:
                     node.neighbors.append(neighbor)
-                    nodes[neighbor.nodeId].neighbors.append(node)
+                    self.nodes[neighbor.nodeId].neighbors.append(node)
                     tempNodes.remove(neighbor)
-        return nodes
 
     def deleteFromListById(self, list, id):
         for i in list:
@@ -65,35 +65,37 @@ class Simulation:
                 list.remove(i)
         return list
 
-    def deleteCompleteNeighborsNodes(self, tempNodes, numberOfNeighbors):
+    def deleteCompleteNeighborsNodes(self, tempNodes):
         for i in tempNodes:
-            if len(i.neighbors) >= numberOfNeighbors:
+            if len(i.neighbors) >= self.numberOfNeighbors:
                 tempNodes.remove(i)
         return tempNodes
 
-    def findShortestMiningTime(self, nodes):
+    def findShortestMiningTime(self):
         miningTimes = []
-        for i in nodes:
+        for i in self.nodes:
             miningTime = i.declareMiningTime()
             miningTimes.append((i, miningTime))
         shortestMiningTime = min(miningTimes, key=lambda x: x[1])
         return shortestMiningTime
 
-    def scheduleNewTransactionEvent(self, time, nodes):
-        transactionEvent = Event(time, 'newTransaction', time + self.averageTransactionBreak * random.uniform(0.5, 1.5), random.choice(nodes))  # TODO - generowac przerwe miedzy rozkladami losowo (np. rozklad wykladniczy)
+    def scheduleNewTransactionEvent(self, time):
+        transactionEvent = Event(time, 'newTransaction', time + self.averageTransactionBreak * random.uniform(0.5, 1.5), random.choice(self.nodes))  # TODO - generowac przerwe miedzy rozkladami losowo (np. rozklad wykladniczy)
         return transactionEvent
 
     def scheduleNewBlockEvent(self, time, shortestMiningTime):
         blockEvent = Event(time, 'newBlock', time + shortestMiningTime[1], shortestMiningTime[0])  # TODO - generowac przerwe miedzy rozkladami losowo (np. rozklad wykladniczy)
         return blockEvent
 
-    def schedulePropagateTransactionEvent(self, time, transaction, node):
-        propagateTransactionEvent = Event(time, 'propagateTransaction', time + self.localVerificationLatency + self.propagationLatency, node)  # TODO - uzaleznic propagationLatency od odleglosci miedzy sasiadami
+    def schedulePropagateTransactionEvent(self, time, transaction, neighbor):
+        propagateTransactionEvent = Event(time, 'propagateTransaction', time + self.localVerificationLatency + self.propagationLatency, neighbor)  # TODO - uzaleznic propagationLatency od odleglosci miedzy sasiadami
         propagateTransactionEvent.transaction = transaction
         return propagateTransactionEvent
 
-    def schedulePropagateBlockEvent(self):  # TODO
-        print('')
+    def schedulePropagateBlockEvent(self, time, block, neighbor):  # TODO
+        propagateBlockEvent = Event(time, 'propagateBlock', time + self.localVerificationLatency + self.propagationLatency, neighbor)  # TODO - uzaleznic propagationLatency od odleglosci miedzy sasiadami
+        propagateBlockEvent.block = block
+        return propagateBlockEvent
 
     def startSimulation(self):
         # ustawienie stanu poczatkowego symulacji
@@ -101,11 +103,11 @@ class Simulation:
         self.queue = Queue()
 
         # poczatek symulacji - generowanie wezlow, pierwsze zdarzenie nowej transakcji, pierwsze zdarzenie nowego bloku
-        self.nodes = self.generateNodes(self.nodes, self.numberOfNodes, self.averagePowPosTime)
-        self.nodes = self.defineNeighbors(self.nodes, self.numberOfNeighbors)  # TODO - moze sie zapetlac i nie bedzie polaczenia miedzy wszystkimi wezlami (szczegolnie widoczne dla 2 sasiadow)
+        self.generateNodes()
+        self.defineNeighbors()  # TODO - moze sie zapetlac i nie bedzie polaczenia miedzy wszystkimi wezlami (szczegolnie widoczne dla 2 sasiadow)
 
-        self.queue.events.append(self.scheduleNewTransactionEvent(currentTime, self.nodes))
-        self.queue.events.append(self.scheduleNewBlockEvent(currentTime, self.findShortestMiningTime(self.nodes)))
+        self.queue.events.append(self.scheduleNewTransactionEvent(currentTime))
+        self.queue.events.append(self.scheduleNewBlockEvent(currentTime, self.findShortestMiningTime()))
 
         # glowna petla symulacji
         while currentTime < self.simulationTime:
@@ -121,19 +123,26 @@ class Simulation:
                     for neighbor in currentEvent.node.neighbors:
                         self.queue.events.append(self.schedulePropagateTransactionEvent(currentTime, transaction, neighbor))  # zdarzenie propagacji do kazdego sasiada
 
-                    self.queue.events.append(self.scheduleNewTransactionEvent(currentTime, self.nodes))  # nastepna transakcja
+                    self.queue.events.append(self.scheduleNewTransactionEvent(currentTime))  # nastepna transakcja
                 case 'newBlock':
-                    self.queue.events.append(self.scheduleNewBlockEvent(currentTime, self.findShortestMiningTime(self.nodes)))  # TODO - wezly powinny deklarowac kiedy stworza nowy blok dopiero w momencie gdy dostana spropagowane info o nowym bloku od nowego wezla
-                    # zapelnic blok transakcjami
-                    # zaczac propagowac blok
+                    block = Block(currentTime, self.blockMaxSize, currentEvent.node)
+                    self.nodes[currentEvent.node.nodeId].blockchain.blockList.append(block)  # dodac block do blockchainu danego wezla
+                    ###################### zapelnic blok transakcjami
+                    ###################### usunac z dostepnych transakcji
+                    for neighbor in currentEvent.node.neighbors:
+                        self.queue.events.append(self.schedulePropagateBlockEvent(currentTime, block, neighbor))
+
+                    self.queue.events.append(self.scheduleNewBlockEvent(currentTime, self.findShortestMiningTime()))  # TODO - wezly powinny deklarowac kiedy stworza nowy blok dopiero w momencie gdy dostana spropagowane info o nowym bloku od nowego wezla
                 case 'propagateTransaction':
                     if not self.nodes[currentEvent.node.nodeId].checkTransactionDuplicate(currentEvent.transaction):  # jezeli tej transakcji nie ma w wezle jeszcze to dodaj do dostepnych transakcji i propaguj dalej
                         self.nodes[currentEvent.node.nodeId].availableTransactions.append(currentEvent.transaction)
                         for neighbor in currentEvent.node.neighbors:
                             self.queue.events.append(self.schedulePropagateTransactionEvent(currentTime, currentEvent.transaction, neighbor))  # zdarzenie propagacji do kazdego sasiada
                 case 'propagateBlock':
-                    # propagowac blok dalej
-                    # zaaktualizowac blockchain
-                    print('')
+                    if not self.nodes[currentEvent.node.nodeId].checkBlockDuplicate(currentEvent.block):  # jezeli tego bloku nie ma w blockchainie wezla jeszcze to dodaj i propaguj dalej
+                        self.nodes[currentEvent.node.nodeId].blockchain.blockList.append(currentEvent.block)
+                        for neighbor in currentEvent.node.neighbors:
+                            self.queue.events.append(self.schedulePropagateBlockEvent(currentTime, currentEvent.block, neighbor))  # zdarzenie propagacji do kazdego sasiada
+                    ##################### usunac z dostepnych transakcji te z bloku
                 case _:
                     print('QUEUE IS EMPTY')

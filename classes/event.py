@@ -1,5 +1,6 @@
 from .node import Node
 from .transaction import Transaction
+from .block import Block
 
 
 class Event:
@@ -8,6 +9,7 @@ class Event:
     node: Node
     currentTime: float
     transaction: Transaction
+    block: Block
 
     def __init__(self, currentTime, eventType, eventTime, node):
         self.currentTime = currentTime

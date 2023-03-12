@@ -1,3 +1,4 @@
+from .blockchain import Blockchain
 import random
 from global_land_mask import globe
 
@@ -8,16 +9,16 @@ class Node:
     averagePowPosTime = 0
     xGeography = 0
     yGeography = 0
+    blockchain: Blockchain
     neighbors = []
     availableTransactions = []
 
-    def __init__(self, nodeId, nodeType, averagePowPosTime, neighbors):
+    def __init__(self, nodeId, nodeType, averagePowPosTime):
         self.nodeId = nodeId
         self.nodeType = nodeType
         self.averagePowPosTime = averagePowPosTime
         self.xGeography = self.generateLocation()[0]
         self.yGeography = self.generateLocation()[1]
-        self.neighbors = neighbors
 
     def generateLocation(
             self):  # TODO - sprawdzic jak generuje, dodac proporcjonalna ilosc uzytkownik per kontynent (np. 0 na antarktydzie, duzo w USA)
@@ -33,6 +34,12 @@ class Node:
 
     def checkTransactionDuplicate(self, transaction):
         if transaction in self.availableTransactions:
+            return True
+        else:
+            return False
+
+    def checkBlockDuplicate(self, block):
+        if block in self.blockchain.blockList:
             return True
         else:
             return False
