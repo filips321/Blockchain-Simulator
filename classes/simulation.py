@@ -87,21 +87,25 @@ class Simulation:
         return availableTransactions
 
     def scheduleNewTransactionEvent(self, time):
-        transactionEvent = Event(time, 'newTransaction', time + self.averageTransactionBreak * random.uniform(0.5, 1.5), random.choice(self.nodes))  # TODO - generowac przerwe miedzy rozkladami losowo (np. rozklad wykladniczy)
+        transactionEvent = Event('newTransaction', time + self.averageTransactionBreak * random.uniform(0.5, 1.5), random.choice(self.nodes))  # TODO - generowac przerwe miedzy rozkladami losowo (np. rozklad wykladniczy)
+        transactionEvent.printEventInfo('NEW EVENT SCHEDULED', time)
         return transactionEvent
 
     def scheduleNewBlockEvent(self, time, shortestMiningTime):
-        blockEvent = Event(time, 'newBlock', time + shortestMiningTime[1], shortestMiningTime[0])  # TODO - generowac przerwe miedzy rozkladami losowo (np. rozklad wykladniczy)
+        blockEvent = Event('newBlock', time + shortestMiningTime[1], shortestMiningTime[0])  # TODO - generowac przerwe miedzy rozkladami losowo (np. rozklad wykladniczy)
+        blockEvent.printEventInfo('NEW EVENT SCHEDULED', time)
         return blockEvent
 
     def schedulePropagateTransactionEvent(self, time, transaction, neighbor):
-        propagateTransactionEvent = Event(time, 'propagateTransaction', time + self.localVerificationLatency + self.propagationLatency, neighbor)  # TODO - uzaleznic propagationLatency od odleglosci miedzy sasiadami
+        propagateTransactionEvent = Event('propagateTransaction', time + self.localVerificationLatency + self.propagationLatency, neighbor)  # TODO - uzaleznic propagationLatency od odleglosci miedzy sasiadami
         propagateTransactionEvent.transaction = transaction
+        propagateTransactionEvent.printEventInfo('NEW EVENT SCHEDULED', time)
         return propagateTransactionEvent
 
     def schedulePropagateBlockEvent(self, time, block, neighbor):  # TODO
-        propagateBlockEvent = Event(time, 'propagateBlock', time + self.localVerificationLatency + self.propagationLatency, neighbor)  # TODO - uzaleznic propagationLatency od odleglosci miedzy sasiadami
+        propagateBlockEvent = Event('propagateBlock', time + self.localVerificationLatency + self.propagationLatency, neighbor)  # TODO - uzaleznic propagationLatency od odleglosci miedzy sasiadami
         propagateBlockEvent.block = block
+        propagateBlockEvent.printEventInfo('NEW EVENT SCHEDULED', time)
         return propagateBlockEvent
 
     def startSimulation(self):
@@ -122,6 +126,7 @@ class Simulation:
             currentEvent = self.queue.events[0]
             currentTime = currentEvent.eventTime
             self.queue.events.pop(0)
+            currentEvent.printEventInfo('CURRENT EVENT', currentTime)
 
             match currentEvent.eventType:
                 case 'newTransaction':

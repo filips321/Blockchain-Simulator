@@ -47,3 +47,9 @@ class Node:
             return True
         else:
             return False
+
+    def printNeighbors(self):
+        string = ''
+        for neighbor in self.neighbors:
+            string += str(neighbor.nodeId) + ' '
+        return string
