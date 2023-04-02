@@ -1,3 +1,4 @@
+import math
 import random
 from .node import Node
 from .queue import Queue
@@ -37,28 +38,58 @@ class Simulation:
             self.nodes.append(generatedNode)
 
     def defineNeighbors(self):
-        tempNodes = self.nodes.copy()
-        for node in self.nodes:
-            self.deleteFromListById(tempNodes, node.nodeId)
-            while len(node.neighbors) < self.numberOfNeighbors:
-                if len(tempNodes) == 0:
-                    break
-                potentialNeighbor = random.choice(tempNodes)
-                if len(node.neighbors) < self.numberOfNeighbors and len(potentialNeighbor.neighbors) < self.numberOfNeighbors and potentialNeighbor not in node.neighbors:
-                    node.neighbors.append(potentialNeighbor)
-                    self.nodes[potentialNeighbor.nodeId].neighbors.append(node)
-                    tempNodes = self.deleteCompleteNeighborsNodes(tempNodes)
+        self.primAlgorithm()
         self.defineMissingNeighbors()
+
+    def primAlgorithm(self):
+        tempNodes = self.nodes.copy()
+        minNode = None
+        currentNode = None
+        nodesIncluded = [tempNodes[0]]
+        self.deleteFromListById(tempNodes, tempNodes[0].nodeId)
+        while True:
+            distance = 999
+            if len(tempNodes) <= 0:
+                break
+            for node in nodesIncluded:
+                for potentialNeighbor in tempNodes:
+                    tempDistance = self.calculateDistance(node, potentialNeighbor)
+                    if tempDistance < distance and len(node.neighbors) < self.numberOfNeighbors:
+                        distance = tempDistance
+                        minNode = potentialNeighbor
+                        currentNode = node
+            minNode.neighbors.append(currentNode)
+            currentNode.neighbors.append(minNode)
+            nodesIncluded.append(minNode)
+            self.deleteFromListById(tempNodes, minNode.nodeId)
 
     def defineMissingNeighbors(self):
         tempNodes = self.nodes.copy()
+        minNode = None
+        tempNodes = [node for node in tempNodes if len(node.neighbors) < self.numberOfNeighbors]
         for node in self.nodes:
             while len(node.neighbors) < self.numberOfNeighbors:
-                neighbor = random.choice(tempNodes)
-                if node != neighbor:
-                    node.neighbors.append(neighbor)
-                    self.nodes[neighbor.nodeId].neighbors.append(node)
-                    tempNodes.remove(neighbor)
+                distance = 999
+                self.deleteFromListById(tempNodes, node.nodeId)
+                if len(tempNodes) <= 0:
+                    break
+                for potentialNeighbor in tempNodes:
+                    if potentialNeighbor in node.neighbors:
+                        continue
+                    tempDistance = self.calculateDistance(node, potentialNeighbor)
+                    if tempDistance < distance:
+                        distance = tempDistance
+                        minNode = potentialNeighbor
+                minNode.neighbors.append(node)
+                node.neighbors.append(minNode)
+                if len(minNode.neighbors) >= self.numberOfNeighbors:
+                    self.deleteFromListById(tempNodes, minNode.nodeId)
+
+    def calculateDistance(self, node1, node2):
+        xTemp = abs(node1.xGeography - node2.xGeography)
+        yTemp = min(abs(node1.yGeography - node2.yGeography), (180 - abs(node1.yGeography)) + (180 - abs(node2.yGeography)))
+        distance = math.sqrt(pow(xTemp, 2) + pow(yTemp, 2))
+        return distance
 
     def deleteFromListById(self, list, id):
         for i in list:
@@ -125,6 +156,8 @@ class Simulation:
             self.queue.events.sort(key=lambda x: x.eventTime)
             currentEvent = self.queue.events[0]
             currentTime = currentEvent.eventTime
+            if currentTime > self.simulationTime:
+                break
             self.queue.events.pop(0)
             currentEvent.printEventInfo('CURRENT EVENT', currentTime)
 

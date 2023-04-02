@@ -24,8 +24,7 @@ class Node:
         self.availableTransactions = []
         self.blockchain = Blockchain()
 
-    def generateLocation(
-            self):  # TODO - sprawdzic jak generuje, dodac proporcjonalna ilosc uzytkownik per kontynent (np. 0 na antarktydzie, duzo w USA)
+    def generateLocation(self):  # TODO - sprawdzic jak generuje, dodac proporcjonalna ilosc uzytkownik per kontynent (np. 0 na antarktydzie, duzo w USA)
         while True:
             xTemp = random.uniform(-90, 90)
             yTemp = random.uniform(-180, 180)

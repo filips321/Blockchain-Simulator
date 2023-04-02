@@ -2,8 +2,8 @@ from classes import simulation
 
 # starting parameters
 simulationTime = 100
-numberOfNodes = 10
-numberOfNeighbors = 3
+numberOfNodes = 8
+numberOfNeighbors = 3  # [2, inf> / musi byc mniejsze od liczby wezlow
 propagationLatency = 10
 localVerificationLatency = 10  # opoznienie wynikajace z weryfikacji poprawnosci transakcji/bloku
 blockMaxSize = 10  # domyslnie dla BTC jest 1MB, transakcje sa zapisywane w bloku do momentu wygenerwoania nowego
