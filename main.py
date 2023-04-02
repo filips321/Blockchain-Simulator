@@ -2,7 +2,7 @@ from classes import simulation
 
 # starting parameters
 simulationTime = 100
-numberOfNodes = 8
+numberOfNodes = 7
 numberOfNeighbors = 3  # [2, inf> / musi byc mniejsze od liczby wezlow
 propagationLatency = 10
 localVerificationLatency = 10  # opoznienie wynikajace z weryfikacji poprawnosci transakcji/bloku

@@ -97,17 +97,11 @@ class Simulation:
                 list.remove(i)
         return list
 
-    def deleteCompleteNeighborsNodes(self, tempNodes):
-        for i in tempNodes:
-            if len(i.neighbors) >= self.numberOfNeighbors:
-                tempNodes.remove(i)
-        return tempNodes
-
     def findShortestMiningTime(self):
         miningTimes = []
-        for i in self.nodes:
-            miningTime = i.declareMiningTime()
-            miningTimes.append((i, miningTime))
+        for node in self.nodes:
+            miningTime = node.declareMiningTime()
+            miningTimes.append((node, miningTime))
         shortestMiningTime = min(miningTimes, key=lambda x: x[1])
         return shortestMiningTime
 
@@ -117,13 +111,17 @@ class Simulation:
                 availableTransactions.remove(transaction)
         return availableTransactions
 
+    def exponentialDistribution(self, averageTime):
+        time = -math.log(1 - random.uniform(0, 1)) / (1 / averageTime)
+        return time
+
     def scheduleNewTransactionEvent(self, time):
-        transactionEvent = Event('newTransaction', time + self.averageTransactionBreak * random.uniform(0.5, 1.5), random.choice(self.nodes))  # TODO - generowac przerwe miedzy rozkladami losowo (np. rozklad wykladniczy)
+        transactionEvent = Event('newTransaction', time + self.exponentialDistribution(self.averageTransactionBreak), random.choice(self.nodes))
         transactionEvent.printEventInfo('NEW EVENT SCHEDULED', time)
         return transactionEvent
 
     def scheduleNewBlockEvent(self, time, shortestMiningTime):
-        blockEvent = Event('newBlock', time + shortestMiningTime[1], shortestMiningTime[0])  # TODO - generowac przerwe miedzy rozkladami losowo (np. rozklad wykladniczy)
+        blockEvent = Event('newBlock', time + shortestMiningTime[1], shortestMiningTime[0])
         blockEvent.printEventInfo('NEW EVENT SCHEDULED', time)
         return blockEvent
 
@@ -146,7 +144,7 @@ class Simulation:
 
         # poczatek symulacji - generowanie wezlow, pierwsze zdarzenie nowej transakcji, pierwsze zdarzenie nowego bloku
         self.generateNodes()
-        self.defineNeighbors()  # TODO - moze sie zapetlac i nie bedzie polaczenia miedzy wszystkimi wezlami (szczegolnie widoczne dla 2 sasiadow)
+        self.defineNeighbors()
 
         self.queue.events.append(self.scheduleNewTransactionEvent(currentTime))
         self.queue.events.append(self.scheduleNewBlockEvent(currentTime, self.findShortestMiningTime()))

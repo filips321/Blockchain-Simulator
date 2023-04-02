@@ -1,3 +1,5 @@
+import math
+
 from .blockchain import Blockchain
 import random
 from global_land_mask import globe
@@ -32,8 +34,12 @@ class Node:
                 return xTemp, yTemp
 
     def declareMiningTime(self):
-        miningTime = self.averagePowPosTime * random.uniform(0.5, 1.5)  # TODO - generowac na podstawie np. rozkladu wykladniczego
+        miningTime = self.exponentialDistribution(self.averagePowPosTime)
         return miningTime
+
+    def exponentialDistribution(self, averageTime):
+        time = -math.log(1 - random.uniform(0, 1)) / (1 / averageTime)
+        return time
 
     def checkTransactionDuplicate(self, transaction):
         if transaction in self.availableTransactions:
