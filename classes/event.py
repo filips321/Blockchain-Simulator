@@ -16,4 +16,4 @@ class Event:
         self.node = node
 
     def printEventInfo(self, string, currentTime):
-        print('[' + str(round(currentTime, 2)) + '] ' + string + ' - type: ' + self.eventType + ', time: ' + str(round(self.eventTime, 2)) + ', starting node: ' + str(self.node.nodeId) + ', neighbors: ' + self.node.printNeighbors())
+        print('[' + str(round(currentTime, 3)) + '] ' + string + ' - type: ' + self.eventType + ', time: ' + str(round(self.eventTime, 3)) + ', starting node: ' + str(self.node.nodeId) + ', neighbors: ' + self.node.printNeighbors())

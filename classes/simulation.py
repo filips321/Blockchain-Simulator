@@ -1,5 +1,6 @@
 import math
 import random
+import geopy.distance
 from .node import Node
 from .queue import Queue
 from .event import Event
@@ -48,7 +49,7 @@ class Simulation:
         nodesIncluded = [tempNodes[0]]
         self.deleteFromListById(tempNodes, tempNodes[0].nodeId)
         while True:
-            distance = 999
+            distance = 99999
             if len(tempNodes) <= 0:
                 break
             for node in nodesIncluded:
@@ -69,7 +70,7 @@ class Simulation:
         tempNodes = [node for node in tempNodes if len(node.neighbors) < self.numberOfNeighbors]
         for node in self.nodes:
             while len(node.neighbors) < self.numberOfNeighbors:
-                distance = 999
+                distance = 99999
                 self.deleteFromListById(tempNodes, node.nodeId)
                 if len(tempNodes) <= 0:
                     break
@@ -86,9 +87,9 @@ class Simulation:
                     self.deleteFromListById(tempNodes, minNode.nodeId)
 
     def calculateDistance(self, node1, node2):
-        xTemp = abs(node1.xGeography - node2.xGeography)
-        yTemp = min(abs(node1.yGeography - node2.yGeography), (180 - abs(node1.yGeography)) + (180 - abs(node2.yGeography)))
-        distance = math.sqrt(pow(xTemp, 2) + pow(yTemp, 2))
+        coords1 = (node1.xGeography, node1.yGeography)
+        coords2 = (node2.xGeography, node2.yGeography)
+        distance = geopy.distance.distance(coords1, coords2).km
         return distance
 
     def deleteFromListById(self, list, id):
@@ -125,14 +126,18 @@ class Simulation:
         blockEvent.printEventInfo('NEW EVENT SCHEDULED', time)
         return blockEvent
 
-    def schedulePropagateTransactionEvent(self, time, transaction, neighbor):
-        propagateTransactionEvent = Event('propagateTransaction', time + self.localVerificationLatency + self.propagationLatency, neighbor)  # TODO - uzaleznic propagationLatency od odleglosci miedzy sasiadami
+    def schedulePropagateTransactionEvent(self, currentNode, time, transaction, neighbor):
+        distance = self.calculateDistance(currentNode, neighbor)
+        propagationLatency = distance * self.propagationLatency
+        propagateTransactionEvent = Event('propagateTransaction', time + self.localVerificationLatency + propagationLatency, neighbor)
         propagateTransactionEvent.transaction = transaction
         propagateTransactionEvent.printEventInfo('NEW EVENT SCHEDULED', time)
         return propagateTransactionEvent
 
-    def schedulePropagateBlockEvent(self, time, block, neighbor):  # TODO
-        propagateBlockEvent = Event('propagateBlock', time + self.localVerificationLatency + self.propagationLatency, neighbor)  # TODO - uzaleznic propagationLatency od odleglosci miedzy sasiadami
+    def schedulePropagateBlockEvent(self, currentNode, time, block, neighbor):
+        distance = self.calculateDistance(currentNode, neighbor)
+        propagationLatency = distance * self.propagationLatency
+        propagateBlockEvent = Event('propagateBlock', time + self.localVerificationLatency + propagationLatency, neighbor)
         propagateBlockEvent.block = block
         propagateBlockEvent.printEventInfo('NEW EVENT SCHEDULED', time)
         return propagateBlockEvent
@@ -165,7 +170,7 @@ class Simulation:
                     self.nodes[currentEvent.node.nodeId].availableTransactions.append(transaction)  # dodac transakcje do availableTransactions danego wezla
 
                     for neighbor in currentEvent.node.neighbors:
-                        self.queue.events.append(self.schedulePropagateTransactionEvent(currentTime, transaction, neighbor))  # zdarzenie propagacji do kazdego sasiada
+                        self.queue.events.append(self.schedulePropagateTransactionEvent(currentEvent.node, currentTime, transaction, neighbor))  # zdarzenie propagacji do kazdego sasiada
 
                     self.queue.events.append(self.scheduleNewTransactionEvent(currentTime))  # nastepna transakcja
                 case 'newBlock':
@@ -175,20 +180,20 @@ class Simulation:
                     self.nodes[currentEvent.node.nodeId].availableTransactions = self.updateAvailableTransactions(block, currentEvent.node.availableTransactions)  # aktualizuje dostepne transakje danego wezla
 
                     for neighbor in currentEvent.node.neighbors:
-                        self.queue.events.append(self.schedulePropagateBlockEvent(currentTime, block, neighbor))
+                        self.queue.events.append(self.schedulePropagateBlockEvent(currentEvent.node, currentTime, block, neighbor))
 
                     self.queue.events.append(self.scheduleNewBlockEvent(currentTime, self.findShortestMiningTime()))  # TODO - wezly powinny deklarowac kiedy stworza nowy blok dopiero w momencie gdy dostana spropagowane info o nowym bloku od nowego wezla
                 case 'propagateTransaction':
                     if not self.nodes[currentEvent.node.nodeId].checkTransactionDuplicate(currentEvent.transaction):  # jezeli tej transakcji nie ma w wezle jeszcze to dodaj do dostepnych transakcji i propaguj dalej
                         self.nodes[currentEvent.node.nodeId].availableTransactions.append(currentEvent.transaction)
                         for neighbor in currentEvent.node.neighbors:
-                            self.queue.events.append(self.schedulePropagateTransactionEvent(currentTime, currentEvent.transaction, neighbor))  # zdarzenie propagacji do kazdego sasiada
+                            self.queue.events.append(self.schedulePropagateTransactionEvent(currentEvent.node, currentTime, currentEvent.transaction, neighbor))  # zdarzenie propagacji do kazdego sasiada
                 case 'propagateBlock':
                     if not self.nodes[currentEvent.node.nodeId].checkBlockDuplicate(currentEvent.block):  # jezeli tego bloku nie ma w blockchainie wezla jeszcze to dodaj i propaguj dalej
                         self.nodes[currentEvent.node.nodeId].blockchain.blockList.append(currentEvent.block)
                         self.nodes[currentEvent.node.nodeId].availableTransactions = self.updateAvailableTransactions(currentEvent.block, currentEvent.node.availableTransactions)  # aktualizuje dostepne transakje danego wezla
 
                         for neighbor in currentEvent.node.neighbors:
-                            self.queue.events.append(self.schedulePropagateBlockEvent(currentTime, currentEvent.block, neighbor))  # zdarzenie propagacji do kazdego sasiada
+                            self.queue.events.append(self.schedulePropagateBlockEvent(currentEvent.node, currentTime, currentEvent.block, neighbor))  # zdarzenie propagacji do kazdego sasiada
                 case _:
                     print('QUEUE IS EMPTY')
