@@ -2,12 +2,12 @@ from classes import simulation
 
 # starting parameters
 simulationTime = 100
-numberOfNodes = 10
+numberOfNodes = 5
 numberOfNeighbors = 3  # [2, inf> / musi byc mniejsze od liczby wezlow
 propagationLatency = 0.000005  # per km / opoznienie wynosi okolo 5us/km
 localVerificationLatency = 0.001  # opoznienie wynikajace z weryfikacji poprawnosci transakcji/bloku TODO sprawdzic ile powinna wynosic ta wartosc okolo
-blockMaxSize = 10  # domyslnie dla BTC jest 1MB, transakcje sa zapisywane w bloku do momentu wygenerwoania nowego
-transactionSize = 10  # srednio jedna transakcja to okolo 300-400B
+blockMaxSize = 5  # domyslnie dla BTC jest 1MB, transakcje sa zapisywane w bloku do momentu wygenerwoania nowego
+transactionSize = 1  # srednio jedna transakcja to okolo 300-400B
 averageTransactionsBreak = 1  # dla BTC srednio transakcje co 0.3s czyli okolo 3 transakcje na sekunde
 averagePowPosTime = 100
 

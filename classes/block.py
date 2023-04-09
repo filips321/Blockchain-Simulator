@@ -1,13 +1,17 @@
 from .node import Node
 
+
 class Block:
-    blockMaxSize: int
+    blockId: int
     blockCreationTime: float
+    blockMaxSize: int
     startingNode: Node
+    previousBlock: int
 
     transactions: []
 
-    def __init__(self, blockCreationTime, blockMaxSize, startingNode):
+    def __init__(self, blockId, blockCreationTime, blockMaxSize, startingNode):
+        self.blockId = blockId
         self.blockMaxSize = blockMaxSize
         self.blockCreationTime = blockCreationTime
         self.startingNode = startingNode

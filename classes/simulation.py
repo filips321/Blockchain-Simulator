@@ -145,6 +145,7 @@ class Simulation:
     def startSimulation(self):
         # ustawienie stanu poczatkowego symulacji
         currentTime = 0
+        currentNumberOfBlocks = 0
         self.queue = Queue()
 
         # poczatek symulacji - generowanie wezlow, pierwsze zdarzenie nowej transakcji, pierwsze zdarzenie nowego bloku
@@ -174,10 +175,10 @@ class Simulation:
 
                     self.queue.events.append(self.scheduleNewTransactionEvent(currentTime))  # nastepna transakcja
                 case 'newBlock':
-                    block = Block(currentTime, self.blockMaxSize, currentEvent.node)
-                    block.fillWithTransactions(currentEvent.node.availableTransactions)  # zapelnia blok transakcjami
+                    block = Block(currentNumberOfBlocks, currentTime, self.blockMaxSize, currentEvent.node)
+                    currentNumberOfBlocks += 1
+                    block.fillWithTransactions(currentEvent.node.availableTransactions)  # zapelnia blok transakcjami i aktualizuje dostepne transakcje danego wezla
                     self.nodes[currentEvent.node.nodeId].blockchain.blockList.append(block)  # dodac block do blockchainu danego wezla
-                    self.nodes[currentEvent.node.nodeId].availableTransactions = self.updateAvailableTransactions(block, currentEvent.node.availableTransactions)  # aktualizuje dostepne transakje danego wezla
 
                     for neighbor in currentEvent.node.neighbors:
                         self.queue.events.append(self.schedulePropagateBlockEvent(currentEvent.node, currentTime, block, neighbor))
