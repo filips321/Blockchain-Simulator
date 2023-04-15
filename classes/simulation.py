@@ -98,14 +98,6 @@ class Simulation:
                 list.remove(i)
         return list
 
-    def findShortestMiningTime(self):
-        miningTimes = []
-        for node in self.nodes:
-            miningTime = node.declareMiningTime()
-            miningTimes.append((node, miningTime))
-        shortestMiningTime = min(miningTimes, key=lambda x: x[1])
-        return shortestMiningTime
-
     def updateAvailableTransactions(self, block, availableTransactions):
         for transaction in block.transactions:
             if transaction in availableTransactions:
@@ -121,10 +113,24 @@ class Simulation:
         transactionEvent.printEventInfo('NEW EVENT SCHEDULED', time)
         return transactionEvent
 
-    def scheduleNewBlockEvent(self, time, shortestMiningTime):
-        blockEvent = Event('newBlock', time + shortestMiningTime[1], shortestMiningTime[0])
+    def scheduleInitialBlockEvents(self, time):
+        blockEvents = []
+        for node in self.nodes:
+            blockEvent = Event('newBlock', time + node.declareMiningTime(), node)
+            blockEvents.append(blockEvent)
+            blockEvent.printEventInfo('NEW EVENT SCHEDULED', time)
+        #blockEvents.sort(key=lambda x: x.eventTime)
+        return blockEvents
+
+    def scheduleNewBlockEvent(self, time, node):
+        blockEvent = Event('newBlock', time + node.declareMiningTime(), node)
         blockEvent.printEventInfo('NEW EVENT SCHEDULED', time)
         return blockEvent
+
+    def findBlockEvent(self, node):
+        for event in self.queue.events:
+            if event.eventType == 'newBlock' and event.node == node:
+                return event
 
     def schedulePropagateTransactionEvent(self, currentNode, time, transaction, neighbor):
         distance = self.calculateDistance(currentNode, neighbor)
@@ -153,7 +159,7 @@ class Simulation:
         self.defineNeighbors()
 
         self.queue.events.append(self.scheduleNewTransactionEvent(currentTime))
-        self.queue.events.append(self.scheduleNewBlockEvent(currentTime, self.findShortestMiningTime()))
+        self.queue.events.extend(self.scheduleInitialBlockEvents(currentTime))
 
         # glowna petla symulacji
         while currentTime < self.simulationTime:
@@ -183,7 +189,7 @@ class Simulation:
                     for neighbor in currentEvent.node.neighbors:
                         self.queue.events.append(self.schedulePropagateBlockEvent(currentEvent.node, currentTime, block, neighbor))
 
-                    self.queue.events.append(self.scheduleNewBlockEvent(currentTime, self.findShortestMiningTime()))  # TODO - wezly powinny deklarowac kiedy stworza nowy blok dopiero w momencie gdy dostana spropagowane info o nowym bloku od nowego wezla
+                    self.queue.events.append(self.scheduleNewBlockEvent(currentTime, currentEvent.node))  # wezel deklaruje kiedy stworzy nowy blok
                 case 'propagateTransaction':
                     if not self.nodes[currentEvent.node.nodeId].checkTransactionDuplicate(currentEvent.transaction):  # jezeli tej transakcji nie ma w wezle jeszcze to dodaj do dostepnych transakcji i propaguj dalej
                         self.nodes[currentEvent.node.nodeId].availableTransactions.append(currentEvent.transaction)
@@ -193,6 +199,9 @@ class Simulation:
                     if not self.nodes[currentEvent.node.nodeId].checkBlockDuplicate(currentEvent.block):  # jezeli tego bloku nie ma w blockchainie wezla jeszcze to dodaj i propaguj dalej
                         self.nodes[currentEvent.node.nodeId].blockchain.blockList.append(currentEvent.block)
                         self.nodes[currentEvent.node.nodeId].availableTransactions = self.updateAvailableTransactions(currentEvent.block, currentEvent.node.availableTransactions)  # aktualizuje dostepne transakje danego wezla
+
+                        self.queue.events.remove(self.findBlockEvent(self.nodes[currentEvent.node.nodeId])) # znalezc w kolejce zdarzenie wykopania nowego bloku przez aktualnie badany wezel i je usunac
+                        self.queue.events.append(self.scheduleNewBlockEvent(currentTime, currentEvent.node)) # dodac nowe zdarzenie wykopania bloku
 
                         for neighbor in currentEvent.node.neighbors:
                             self.queue.events.append(self.schedulePropagateBlockEvent(currentEvent.node, currentTime, currentEvent.block, neighbor))  # zdarzenie propagacji do kazdego sasiada

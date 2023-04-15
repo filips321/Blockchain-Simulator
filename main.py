@@ -8,8 +8,8 @@ propagationLatency = 0.000005  # per km / opoznienie wynosi okolo 5us/km
 localVerificationLatency = 0.001  # opoznienie wynikajace z weryfikacji poprawnosci transakcji/bloku TODO sprawdzic ile powinna wynosic ta wartosc okolo
 blockMaxSize = 5  # domyslnie dla BTC jest 1MB, transakcje sa zapisywane w bloku do momentu wygenerwoania nowego
 transactionSize = 1  # srednio jedna transakcja to okolo 300-400B
-averageTransactionsBreak = 1  # dla BTC srednio transakcje co 0.3s czyli okolo 3 transakcje na sekunde
-averagePowPosTime = 100
+averageTransactionsBreak = 10  # dla BTC srednio transakcje co 0.3s czyli okolo 3 transakcje na sekunde
+averagePowPosTime = 10
 
 if __name__ == '__main__':
     print('')
