@@ -6,15 +6,16 @@ class Block:
     blockCreationTime: float
     blockMaxSize: int
     startingNode: Node
-    previousBlock: int
+    previousBlockId: int
 
     transactions: []
 
-    def __init__(self, blockId, blockCreationTime, blockMaxSize, startingNode):
+    def __init__(self, blockId, blockCreationTime, blockMaxSize, startingNode, previousBlockId):
         self.blockId = blockId
         self.blockMaxSize = blockMaxSize
         self.blockCreationTime = blockCreationTime
         self.startingNode = startingNode
+        self.previousBlockId = previousBlockId
         self.transactions = []
 
     def fillWithTransactions(self, availableTransactions):

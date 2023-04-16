@@ -11,6 +11,7 @@ class Node:
     averagePowPosTime = 0
     xGeography = 0
     yGeography = 0
+    hashWorkingBlock: int
 
     neighbors: []
     availableTransactions: []
@@ -25,6 +26,7 @@ class Node:
         self.neighbors = []
         self.availableTransactions = []
         self.blockchain = Blockchain()
+        self.hashWorkingBlock = None
 
     def generateLocation(self):  # TODO - sprawdzic jak generuje, dodac proporcjonalna ilosc uzytkownik per kontynent (np. 0 na antarktydzie, duzo w USA)
         while True:
