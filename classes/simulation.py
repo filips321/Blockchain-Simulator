@@ -18,10 +18,12 @@ class Simulation:
     localVerificationLatency: int
     transactionSize: int
     blockMaxSize: int
+    numberOfConfirmationBlocks: int
     nodes: []
     queue: Queue
+    staleBlocks: []
 
-    def __init__(self, simulationTime, numberOfNodes, numberOfNeighbors, averageTransactionsBreak, averagePowPosTime, propagationLatency, localVerificationLatency, transactionSize, blockMaxSize):
+    def __init__(self, simulationTime, numberOfNodes, numberOfNeighbors, averageTransactionsBreak, averagePowPosTime, propagationLatency, localVerificationLatency, transactionSize, blockMaxSize, numberOfConfirmationBlocks):
         self.simulationTime = simulationTime
         self.numberOfNodes = numberOfNodes
         self.numberOfNeighbors = numberOfNeighbors
@@ -31,7 +33,9 @@ class Simulation:
         self.localVerificationLatency = localVerificationLatency
         self.transactionSize = transactionSize
         self.blockMaxSize = blockMaxSize
+        self.numberOfConfirmationBlocks = numberOfConfirmationBlocks
         self.nodes = []
+        self.staleBlocks = []
 
     def generateNodes(self):
         for i in range(self.numberOfNodes):
@@ -103,6 +107,22 @@ class Simulation:
             if transaction in availableTransactions:
                 availableTransactions.remove(transaction)
         return availableTransactions
+
+    def updateStaleBlocks(self, node): # TODO sprawdzic
+        newStaleBlockIds = node.blockchain.findStaleBlocks(self.numberOfConfirmationBlocks)
+        if len(newStaleBlockIds) > 0:
+            newStaleBlocks = []
+            for blockId in newStaleBlockIds:
+                for block in node.blockchain.blockList:
+                    if blockId == block.blockId:
+                        newStaleBlocks.append(block)
+                        break
+            staleTransactions = []
+            for staleBlock in newStaleBlocks:
+                staleTransactions.extend(staleBlock.transactions)
+            for node in self.nodes:
+                node.availableTransactions.extend(staleTransactions)
+            self.staleBlocks.extend(newStaleBlocks)
 
     def exponentialDistribution(self, averageTime):
         time = -math.log(1 - random.uniform(0, 1)) / (1 / averageTime)
@@ -193,6 +213,9 @@ class Simulation:
 
                     self.queue.events.append(self.scheduleNewBlockEvent(currentTime, currentEvent.node))  # wezel deklaruje kiedy stworzy nowy blok
                     currentEvent.node.hashWorkingBlock = block.blockId # zmiana aktualnego haszu bloku nad ktorym aktualnie pracuje wezel po stworzeniu bloku
+
+                    if block.blockId >= self.numberOfConfirmationBlocks:
+                        self.updateStaleBlocks(currentEvent.node) # TODO sprawdzic
                 case 'propagateTransaction':
                     if not self.nodes[currentEvent.node.nodeId].checkTransactionDuplicate(currentEvent.transaction):  # jezeli tej transakcji nie ma w wezle jeszcze to dodaj do dostepnych transakcji i propaguj dalej
                         self.nodes[currentEvent.node.nodeId].availableTransactions.append(currentEvent.transaction)

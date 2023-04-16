@@ -10,11 +10,12 @@ blockMaxSize = 5  # domyslnie dla BTC jest 1MB, transakcje sa zapisywane w bloku
 transactionSize = 1  # srednio jedna transakcja to okolo 300-400B
 averageTransactionsBreak = 10  # dla BTC srednio transakcje co 0.3s czyli okolo 3 transakcje na sekunde
 averagePowPosTime = 10
+numberOfConfirmationBlocks = 6  # po tylu kolejnych blokach, blok i transakcje w nim zawarte sa potwierdzone
 
 if __name__ == '__main__':
     print('')
     print('---------------SIMULATION LOGS---------------')
-    simulation = simulation.Simulation(simulationTime, numberOfNodes, numberOfNeighbors, averageTransactionsBreak, averagePowPosTime, propagationLatency, localVerificationLatency, transactionSize, blockMaxSize)
+    simulation = simulation.Simulation(simulationTime, numberOfNodes, numberOfNeighbors, averageTransactionsBreak, averagePowPosTime, propagationLatency, localVerificationLatency, transactionSize, blockMaxSize, numberOfConfirmationBlocks)
     simulation.startSimulation()
 
 

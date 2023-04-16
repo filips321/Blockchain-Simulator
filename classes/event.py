@@ -16,4 +16,11 @@ class Event:
         self.node = node
 
     def printEventInfo(self, string, currentTime):
-        print('[' + str(round(currentTime, 3)) + '] ' + string + ' - type: ' + self.eventType + ', time: ' + str(round(self.eventTime, 3)) + ', starting node: ' + str(self.node.nodeId) + ', neighbors: ' + self.node.printNeighbors())
+        if self.eventType == 'newBlock':
+            print('[' + str(round(currentTime, 3)) + '] ' + string + ' - type: ' + self.eventType + ', time: ' + str(round(self.eventTime, 3)) + ', starting node: ' + str(self.node.nodeId) + ', neighbors: ' + self.node.printNeighbors())
+        if self.eventType == 'propagateBlock':
+            print('[' + str(round(currentTime, 3)) + '] ' + string + ' - type: ' + self.eventType + ', blockID: ' + str(self.block.blockId) + ', time: ' + str(round(self.eventTime, 3)) + ', starting node: ' + str(self.node.nodeId) + ', neighbors: ' + self.node.printNeighbors())
+        if self.eventType == 'newTransaction':
+            print('[' + str(round(currentTime, 3)) + '] ' + string + ' - type: ' + self.eventType + ', time: ' + str(round(self.eventTime, 3)) + ', starting node: ' + str(self.node.nodeId) + ', neighbors: ' + self.node.printNeighbors())
+        if self.eventType == 'propagateTransaction':
+            print('[' + str(round(currentTime, 3)) + '] ' + string + ' - type: ' + self.eventType + ', transactionID: ' + str(self.transaction.transactionId) + ', time: ' + str(round(self.eventTime, 3)) + ', starting node: ' + str(self.node.nodeId) + ', neighbors: ' + self.node.printNeighbors())
