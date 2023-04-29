@@ -49,3 +49,9 @@ if __name__ == '__main__':
             for p in j.blockchain.blockList:
                 if p.blockId == i:
                     print('[Block ID - ' + str(i) + '] Node: ' + str(j.nodeId) + ' Transactions: ' + str([x.transactionId for x in p.transactions]))
+
+    print('')
+    print('---------------TESTING - STALE BLOCKS ---------------')
+
+    staleBlocks = [x.blockId for x in simulation.staleBlocks]
+    print('Stale Blocks - ' + str(staleBlocks))
