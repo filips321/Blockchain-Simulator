@@ -4,6 +4,7 @@ from classes import simulation
 # starting parameters
 simulationTime = 100
 numberOfNodes = 5
+minersFullNodesProportion = (10, 90) # proporcja liczby gornikow do full nodes (miners/fullNodes), musi sie sumowac do 100%
 numberOfNeighbors = 3  # [2, inf> / musi byc mniejsze od liczby wezlow
 propagationLatency = 0.000005  # per km / opoznienie wynosi okolo 5us/km
 localVerificationLatency = 0.001  # opoznienie wynikajace z weryfikacji poprawnosci transakcji/bloku TODO sprawdzic ile powinna wynosic ta wartosc okolo
@@ -15,51 +16,17 @@ numberOfConfirmationBlocks = 6  # po tylu kolejnych blokach, blok i transakcje w
 
 if __name__ == '__main__':
 
-    # testing - supporting functions
-    def printNeighbors(node):
-        string = ''
-        for i in node.neighbors:
-            string += str(i.nodeId) + ' '
-        return string
-
+    # save console output to file
     # with open('output.txt', 'w') as f:
     #     sys.stdout = f
 
-    # testing - printing
+    # simulation start + logs printing
     print('---------------SIMULATION LOGS---------------')
-    simulation = simulation.Simulation(simulationTime, numberOfNodes, numberOfNeighbors, averageTransactionsBreak, averagePowPosTime, propagationLatency, localVerificationLatency, transactionSize, blockMaxSize, numberOfConfirmationBlocks)
+    simulation = simulation.Simulation(simulationTime, numberOfNodes, minersFullNodesProportion, numberOfNeighbors, averageTransactionsBreak, averagePowPosTime, propagationLatency, localVerificationLatency, transactionSize, blockMaxSize, numberOfConfirmationBlocks)
     simulation.startSimulation()
 
-    print('')
-    print('---------------TESTING - NODES ---------------')
+    # simulation properties printing
+    simulation.printSimulationProperties()
 
-    for i in simulation.nodes:
-        print('[ID ' + str(i.nodeId) + '] Node - x: ' + str(i.xGeography) + ', y: ' + str(i.yGeography) + ', neighbors: ' + printNeighbors(i))
-
-    print('')
-    print('---------------TESTING - BLOCKCHAINS ---------------')
-
-    for i in simulation.nodes:
-        blockchainIds = [(x.blockId, str(x.previousBlockId)) for x in i.blockchain.blockList]
-        print('[Node ID - ' + str(i.nodeId) + '] Blockchain: ' + str(blockchainIds))
-
-    print('')
-    print('---------------TESTING - TRANSACTIONS ---------------')
-
-    for i in range(len(simulation.nodes[0].blockchain.blockList)):
-        for j in simulation.nodes:
-            for p in j.blockchain.blockList:
-                if p.blockId == i:
-                    print('[Block ID - ' + str(i) + '] Node: ' + str(j.nodeId) + ' Transactions: ' + str([x.transactionId for x in p.transactions]))
-
-    print('')
-    print('---------------TESTING - STALE BLOCKS ---------------')
-
-    staleBlocks = [(x.blockId, [y.transactionId for y in x.transactions]) for x in simulation.staleBlocks]
-    if len(staleBlocks) > 0:
-        for i in staleBlocks:
-            print('[Stale Block ID - ' + str(i[0]) + '] Transactions: ' + str(i[1]))
-    else:
-        print('NO STALE BLOCKS')
-
+    # stop saving console output to file
     # sys.stdout = sys.__stdout__
