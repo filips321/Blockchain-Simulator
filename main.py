@@ -1,3 +1,4 @@
+import sys
 from classes import simulation
 
 # starting parameters
@@ -13,11 +14,6 @@ averagePowPosTime = 10
 numberOfConfirmationBlocks = 6  # po tylu kolejnych blokach, blok i transakcje w nim zawarte sa potwierdzone
 
 if __name__ == '__main__':
-    print('')
-    print('---------------SIMULATION LOGS---------------')
-    simulation = simulation.Simulation(simulationTime, numberOfNodes, numberOfNeighbors, averageTransactionsBreak, averagePowPosTime, propagationLatency, localVerificationLatency, transactionSize, blockMaxSize, numberOfConfirmationBlocks)
-    simulation.startSimulation()
-
 
     # testing - supporting functions
     def printNeighbors(node):
@@ -26,8 +22,14 @@ if __name__ == '__main__':
             string += str(i.nodeId) + ' '
         return string
 
+    # with open('output.txt', 'w') as f:
+    #     sys.stdout = f
 
     # testing - printing
+    print('---------------SIMULATION LOGS---------------')
+    simulation = simulation.Simulation(simulationTime, numberOfNodes, numberOfNeighbors, averageTransactionsBreak, averagePowPosTime, propagationLatency, localVerificationLatency, transactionSize, blockMaxSize, numberOfConfirmationBlocks)
+    simulation.startSimulation()
+
     print('')
     print('---------------TESTING - NODES ---------------')
 
@@ -59,3 +61,5 @@ if __name__ == '__main__':
             print('[Stale Block ID - ' + str(i[0]) + '] Transactions: ' + str(i[1]))
     else:
         print('NO STALE BLOCKS')
+
+    # sys.stdout = sys.__stdout__
