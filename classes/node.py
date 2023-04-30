@@ -7,7 +7,7 @@ from global_land_mask import globe
 
 class Node:
     nodeId: int
-    nodeType: str  # user / miner
+    nodeType: str  # miner / node
     averagePowPosTime = 0
     xGeography = 0
     yGeography = 0

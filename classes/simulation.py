@@ -11,7 +11,7 @@ from .block import Block
 class Simulation:
     simulationTime: int
     numberOfNodes: int
-    minersFullNodesProportion: tuple
+    minersProportion: float
     numberOfNeighbors: int
     averagePowPosTime: float
     averageTransactionBreak: float
@@ -24,10 +24,10 @@ class Simulation:
     queue: Queue
     staleBlocks: []
 
-    def __init__(self, simulationTime, numberOfNodes, minersFullNodesProportion, numberOfNeighbors, averageTransactionsBreak, averagePowPosTime, propagationLatency, localVerificationLatency, transactionSize, blockMaxSize, numberOfConfirmationBlocks):
+    def __init__(self, simulationTime, numberOfNodes, minersProportion, numberOfNeighbors, averageTransactionsBreak, averagePowPosTime, propagationLatency, localVerificationLatency, transactionSize, blockMaxSize, numberOfConfirmationBlocks):
         self.simulationTime = simulationTime
         self.numberOfNodes = numberOfNodes
-        self.minersFullNodesProportion = minersFullNodesProportion
+        self.minersProportion = minersProportion
         self.numberOfNeighbors = numberOfNeighbors
         self.averageTransactionBreak = averageTransactionsBreak
         self.averagePowPosTime = averagePowPosTime
@@ -88,7 +88,7 @@ class Simulation:
                     currentEvent.node.hashWorkingBlock = block.blockId # zmiana aktualnego haszu bloku nad ktorym aktualnie pracuje wezel po stworzeniu bloku
 
                     if block.blockId >= self.numberOfConfirmationBlocks:
-                        self.updateStaleBlocks(currentEvent.node) # TODO sprawdzic
+                        self.updateStaleBlocks(currentEvent.node)
                 case 'propagateTransaction':
                     if not self.nodes[currentEvent.node.nodeId].checkTransactionDuplicate(currentEvent.transaction):  # jezeli tej transakcji nie ma w wezle jeszcze to dodaj do dostepnych transakcji i propaguj dalej
                         self.nodes[currentEvent.node.nodeId].availableTransactions.append(currentEvent.transaction)
@@ -97,11 +97,12 @@ class Simulation:
                 case 'propagateBlock':
                     if not self.nodes[currentEvent.node.nodeId].checkBlockDuplicate(currentEvent.block):  # jezeli tego bloku nie ma w blockchainie wezla jeszcze to dodaj i propaguj dalej
                         self.nodes[currentEvent.node.nodeId].blockchain.blockList.append(currentEvent.block)
-                        if currentEvent.node.blockchain.calculateBlockchainLength(currentEvent.block.blockId) > currentEvent.node.blockchain.calculateBlockchainLength(currentEvent.node.hashWorkingBlock):  # zmienic wydarzenie nowego bloku tylko w momencie nowo dodany blok do blockchainu tworzy nowy najdluzszy lancuch
-                            self.queue.events.remove(self.findBlockEvent(self.nodes[currentEvent.node.nodeId]))  # znalezc w kolejce zdarzenie wykopania nowego bloku przez aktualnie badany wezel i je usunac
-                            self.nodes[currentEvent.node.nodeId].availableTransactions = self.updateAvailableTransactions(currentEvent.block, currentEvent.node.availableTransactions)  # aktualizuje dostepne transakje danego wezla
-                            self.queue.events.append(self.scheduleNewBlockEvent(currentTime, currentEvent.node))  # dodac nowe zdarzenie wykopania bloku
-                            currentEvent.node.hashWorkingBlock = currentEvent.block.blockId  # zmiana aktualnego haszu bloku nad ktorym aktualnie pracuje wezel po stworzeniu bloku
+                        if self.nodes[currentEvent.node.nodeId].nodeType == 'miner':
+                            if currentEvent.node.blockchain.calculateBlockchainLength(currentEvent.block.blockId) > currentEvent.node.blockchain.calculateBlockchainLength(currentEvent.node.hashWorkingBlock):  # zmienic wydarzenie nowego bloku tylko w momencie nowo dodany blok do blockchainu tworzy nowy najdluzszy lancuch
+                                self.queue.events.remove(self.findBlockEvent(self.nodes[currentEvent.node.nodeId]))  # znalezc w kolejce zdarzenie wykopania nowego bloku przez aktualnie badany wezel i je usunac
+                                self.nodes[currentEvent.node.nodeId].availableTransactions = self.updateAvailableTransactions(currentEvent.block, currentEvent.node.availableTransactions)  # aktualizuje dostepne transakje danego wezla
+                                self.queue.events.append(self.scheduleNewBlockEvent(currentTime, currentEvent.node))  # dodac nowe zdarzenie wykopania bloku
+                                currentEvent.node.hashWorkingBlock = currentEvent.block.blockId  # zmiana aktualnego haszu bloku nad ktorym aktualnie pracuje wezel po stworzeniu bloku
 
                         for neighbor in currentEvent.node.neighbors:
                             self.queue.events.append(self.schedulePropagateBlockEvent(currentEvent.node, currentTime, currentEvent.block, neighbor))  # zdarzenie propagacji do kazdego sasiada
@@ -112,8 +113,23 @@ class Simulation:
     # SIMULATION SUPPORTING FUNCTIONS
     def generateNodes(self):
         for i in range(self.numberOfNodes):
-            generatedNode = Node(i, 'xd', self.averagePowPosTime)  # TODO - ustawic typy wezlow
+            randomNumber = random.uniform(0, 1)
+            if randomNumber <= self.minersProportion:
+                generatedNode = Node(i, 'miner', self.averagePowPosTime)
+            else:
+                generatedNode = Node(i, 'node', 0)
             self.nodes.append(generatedNode)
+        if self.checkAvailableMiners() is False:
+            self.nodes[0].nodeType = 'miner'
+            self.nodes[0].averagePowPosTime = self.averagePowPosTime
+
+    def checkAvailableMiners(self):
+        flag = False
+        for node in self.nodes:
+            if node.nodeType == 'miner':
+                flag = True
+                return flag
+        return flag
 
     def defineNeighbors(self):
         self.primAlgorithm()
@@ -181,7 +197,7 @@ class Simulation:
                 availableTransactions.remove(transaction)
         return availableTransactions
 
-    def updateStaleBlocks(self, node): # TODO sprawdzic
+    def updateStaleBlocks(self, node):
         newStaleBlockIds = node.blockchain.findStaleBlocks(self.numberOfConfirmationBlocks)
         if len(newStaleBlockIds) > 0:
             newStaleBlocks = []
@@ -209,9 +225,10 @@ class Simulation:
     def scheduleInitialBlockEvents(self, time):
         blockEvents = []
         for node in self.nodes:
-            blockEvent = Event('newBlock', time + node.declareMiningTime(), node)
-            blockEvents.append(blockEvent)
-            blockEvent.printEventInfo('NEW EVENT SCHEDULED', time)
+            if node.nodeType == 'miner':
+                blockEvent = Event('newBlock', time + node.declareMiningTime(), node)
+                blockEvents.append(blockEvent)
+                blockEvent.printEventInfo('NEW EVENT SCHEDULED', time)
         #blockEvents.sort(key=lambda x: x.eventTime)
         return blockEvents
 
@@ -246,30 +263,22 @@ class Simulation:
     def printSimulationProperties(self):
         print('')
         print('---------------TESTING - NODES ---------------')
-
         for i in self.nodes:
-            print('[ID ' + str(i.nodeId) + '] Node - x: ' + str(i.xGeography) + ', y: ' + str(i.yGeography) + ', neighbors: ' + self.printNeighbors(i))
-
+            print('[ID ' + str(i.nodeId) + '] Type: ' + i.nodeType + ', x: ' + str(i.xGeography) + ', y: ' + str(i.yGeography) + ', neighbors: ' + self.printNeighbors(i))
         print('')
         print('---------------TESTING - BLOCKCHAINS ---------------')
-
         for i in self.nodes:
             blockchainIds = [(x.blockId, str(x.previousBlockId)) for x in i.blockchain.blockList]
             print('[Node ID - ' + str(i.nodeId) + '] Blockchain: ' + str(blockchainIds))
-
         print('')
         print('---------------TESTING - TRANSACTIONS ---------------')
-
         for i in range(len(self.nodes[0].blockchain.blockList)):
             for j in self.nodes:
                 for p in j.blockchain.blockList:
                     if p.blockId == i:
-                        print('[Block ID - ' + str(i) + '] Node: ' + str(j.nodeId) + ' Transactions: ' + str(
-                            [x.transactionId for x in p.transactions]))
-
+                        print('[Block ID - ' + str(i) + '] Node: ' + str(j.nodeId) + ' Transactions: ' + str([x.transactionId for x in p.transactions]))
         print('')
         print('---------------TESTING - STALE BLOCKS ---------------')
-
         staleBlocks = [(x.blockId, [y.transactionId for y in x.transactions]) for x in self.staleBlocks]
         if len(staleBlocks) > 0:
             for i in staleBlocks:

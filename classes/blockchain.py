@@ -16,7 +16,7 @@ class Blockchain:
                 lookingForBlockId = block.previousBlockId
         return currentLength
 
-    def findStaleBlocks(self, numberOfConfirmationBlocks): # TODO przetestowac
+    def findStaleBlocks(self, numberOfConfirmationBlocks):
         lastBlockId = self.blockList[-1].blockId
         confirmedBlockId = lastBlockId - numberOfConfirmationBlocks
         staleBlockIds = []
