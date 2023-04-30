@@ -54,4 +54,8 @@ if __name__ == '__main__':
     print('---------------TESTING - STALE BLOCKS ---------------')
 
     staleBlocks = [(x.blockId, [y.transactionId for y in x.transactions]) for x in simulation.staleBlocks]
-    print('Stale Blocks - ' + str(staleBlocks))
+    if len(staleBlocks) > 0:
+        for i in staleBlocks:
+            print('[Stale Block ID - ' + str(i[0]) + '] Transactions: ' + str(i[1]))
+    else:
+        print('NO STALE BLOCKS')
