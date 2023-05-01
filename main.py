@@ -3,10 +3,10 @@ from classes import simulation
 
 # starting parameters
 simulationTime = 100
-numberOfNodes = 10
-minersProportion = 0.3 # proporcja liczby gornikow do full nodes (miners/fullNodes), zakres 0-1 (np. 0.2 znaczy ze 20% to gornicy)
+numberOfNodes = 100
+minersProportion = 0.1 # proporcja liczby gornikow do full nodes (miners/fullNodes), zakres 0-1 (np. 0.2 znaczy ze 20% to gornicy)
 numberOfNeighbors = 3  # [2, inf> / musi byc mniejsze od liczby wezlow
-propagationLatency = 0.000005  # per km / opoznienie wynosi okolo 5us/km
+propagationLatency = 0.00005  # per km / opoznienie wynosi okolo 5us/km
 localVerificationLatency = 0.001  # opoznienie wynikajace z weryfikacji poprawnosci transakcji/bloku TODO sprawdzic ile powinna wynosic ta wartosc okolo
 blockMaxSize = 5  # domyslnie dla BTC jest 1MB, transakcje sa zapisywane w bloku do momentu wygenerwoania nowego
 transactionSize = 1  # srednio jedna transakcja to okolo 300-400B
@@ -21,12 +21,15 @@ if __name__ == '__main__':
     #     sys.stdout = f
 
     # simulation start + logs printing
-    print('---------------SIMULATION LOGS---------------')
+    print('--------------- SIMULATION LOGS ---------------')
     simulation = simulation.Simulation(simulationTime, numberOfNodes, minersProportion, numberOfNeighbors, averageTransactionsBreak, averagePowPosTime, propagationLatency, localVerificationLatency, transactionSize, blockMaxSize, numberOfConfirmationBlocks)
     simulation.startSimulation()
 
     # simulation properties printing
     simulation.printSimulationProperties()
+
+    # metrics calculation
+    simulation.calculateSimulationMetrics()
 
     # stop saving console output to file
     # sys.stdout = sys.__stdout__

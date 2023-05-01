@@ -7,7 +7,6 @@ class Block:
     blockMaxSize: int
     startingNode: Node
     previousBlockId: int
-
     transactions: []
 
     def __init__(self, blockId, blockCreationTime, blockMaxSize, startingNode, previousBlockId):

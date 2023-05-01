@@ -1,6 +1,7 @@
 import math
 import random
 import geopy.distance
+from .calculator import Calculator
 from .node import Node
 from .queue import Queue
 from .event import Event
@@ -23,6 +24,7 @@ class Simulation:
     nodes: []
     queue: Queue
     staleBlocks: []
+    calculator: Calculator
 
     def __init__(self, simulationTime, numberOfNodes, minersProportion, numberOfNeighbors, averageTransactionsBreak, averagePowPosTime, propagationLatency, localVerificationLatency, transactionSize, blockMaxSize, numberOfConfirmationBlocks):
         self.simulationTime = simulationTime
@@ -259,26 +261,32 @@ class Simulation:
         return propagateBlockEvent
 
 
+    # CALCULATE SIMULATION METRICS
+    def calculateSimulationMetrics(self):
+        self.calculator = Calculator(self.nodes, self.staleBlocks)
+        self.calculator.calculate()
+
+
     # SIMULATION PROPERTIES PRINTING FUNCTIONS
     def printSimulationProperties(self):
         print('')
-        print('---------------TESTING - NODES ---------------')
+        print('--------------- TESTING - NODES ---------------')
         for i in self.nodes:
             print('[ID ' + str(i.nodeId) + '] Type: ' + i.nodeType + ', x: ' + str(i.xGeography) + ', y: ' + str(i.yGeography) + ', neighbors: ' + self.printNeighbors(i))
         print('')
-        print('---------------TESTING - BLOCKCHAINS ---------------')
+        print('--------------- TESTING - BLOCKCHAINS ---------------')
         for i in self.nodes:
             blockchainIds = [(x.blockId, str(x.previousBlockId)) for x in i.blockchain.blockList]
             print('[Node ID - ' + str(i.nodeId) + '] Blockchain: ' + str(blockchainIds))
         print('')
-        print('---------------TESTING - TRANSACTIONS ---------------')
+        print('--------------- TESTING - TRANSACTIONS ---------------')
         for i in range(len(self.nodes[0].blockchain.blockList)):
             for j in self.nodes:
                 for p in j.blockchain.blockList:
                     if p.blockId == i:
                         print('[Block ID - ' + str(i) + '] Node: ' + str(j.nodeId) + ' Transactions: ' + str([x.transactionId for x in p.transactions]))
         print('')
-        print('---------------TESTING - STALE BLOCKS ---------------')
+        print('--------------- TESTING - STALE BLOCKS ---------------')
         staleBlocks = [(x.blockId, [y.transactionId for y in x.transactions]) for x in self.staleBlocks]
         if len(staleBlocks) > 0:
             for i in staleBlocks:
