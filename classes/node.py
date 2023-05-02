@@ -1,5 +1,4 @@
 import math
-
 from .blockchain import Blockchain
 import random
 from global_land_mask import globe
@@ -11,8 +10,7 @@ class Node:
     averagePowPosTime = 0
     xGeography = 0
     yGeography = 0
-    hashWorkingBlock: int
-
+    hashWorkingBlock: None
     neighbors: []
     availableTransactions: []
     blockchain: Blockchain

@@ -4,17 +4,19 @@ from .node import Node
 class Block:
     blockId: int
     blockCreationTime: float
+    blockConfirmationTime: None
     blockMaxSize: int
     startingNode: Node
-    previousBlockId: int
+    previousBlock: None
     transactions: []
 
-    def __init__(self, blockId, blockCreationTime, blockMaxSize, startingNode, previousBlockId):
+    def __init__(self, blockId, blockCreationTime, blockMaxSize, startingNode, previousBlock):
         self.blockId = blockId
         self.blockMaxSize = blockMaxSize
         self.blockCreationTime = blockCreationTime
         self.startingNode = startingNode
-        self.previousBlockId = previousBlockId
+        self.previousBlock = previousBlock
+        self.blockConfirmationTime = None
         self.transactions = []
 
     def fillWithTransactions(self, availableTransactions):

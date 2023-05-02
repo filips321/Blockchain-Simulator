@@ -3,8 +3,8 @@ from classes import simulation
 
 # starting parameters
 simulationTime = 100
-numberOfNodes = 100
-minersProportion = 0.1 # proporcja liczby gornikow do full nodes (miners/fullNodes), zakres 0-1 (np. 0.2 znaczy ze 20% to gornicy)
+numberOfNodes = 15
+minersProportion = 0.3 # proporcja liczby gornikow do full nodes (miners/fullNodes), zakres 0-1 (np. 0.2 znaczy ze 20% to gornicy)
 numberOfNeighbors = 3  # [2, inf> / musi byc mniejsze od liczby wezlow
 propagationLatency = 0.00005  # per km / opoznienie wynosi okolo 5us/km
 localVerificationLatency = 0.001  # opoznienie wynikajace z weryfikacji poprawnosci transakcji/bloku TODO sprawdzic ile powinna wynosic ta wartosc okolo

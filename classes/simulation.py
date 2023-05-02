@@ -87,10 +87,12 @@ class Simulation:
                         self.queue.events.append(self.schedulePropagateBlockEvent(currentEvent.node, currentTime, block, neighbor))
 
                     self.queue.events.append(self.scheduleNewBlockEvent(currentTime, currentEvent.node))  # wezel deklaruje kiedy stworzy nowy blok
-                    currentEvent.node.hashWorkingBlock = block.blockId # zmiana aktualnego haszu bloku nad ktorym aktualnie pracuje wezel po stworzeniu bloku
+                    currentEvent.node.hashWorkingBlock = block # zmiana aktualnego haszu bloku nad ktorym aktualnie pracuje wezel po stworzeniu bloku
 
-                    if block.blockId >= self.numberOfConfirmationBlocks:
-                        self.updateStaleBlocks(currentEvent.node)
+                    confirmedBlock = self.confirmBlock(currentEvent.node.nodeId, currentTime) # zatwierdzanie waznosci bloku stworzonego o 'numberOfConfirmationBlocks' blokow wczesniej (dla BTC 6)
+                    # TODO dodac zatwierdzenie transakcji dla potwierdzonego bloku
+                    self.updateStaleBlocks(confirmedBlock, currentEvent.node.nodeId)
+
                 case 'propagateTransaction':
                     if not self.nodes[currentEvent.node.nodeId].checkTransactionDuplicate(currentEvent.transaction):  # jezeli tej transakcji nie ma w wezle jeszcze to dodaj do dostepnych transakcji i propaguj dalej
                         self.nodes[currentEvent.node.nodeId].availableTransactions.append(currentEvent.transaction)
@@ -100,11 +102,11 @@ class Simulation:
                     if not self.nodes[currentEvent.node.nodeId].checkBlockDuplicate(currentEvent.block):  # jezeli tego bloku nie ma w blockchainie wezla jeszcze to dodaj i propaguj dalej
                         self.nodes[currentEvent.node.nodeId].blockchain.blockList.append(currentEvent.block)
                         if self.nodes[currentEvent.node.nodeId].nodeType == 'miner':
-                            if currentEvent.node.blockchain.calculateBlockchainLength(currentEvent.block.blockId) > currentEvent.node.blockchain.calculateBlockchainLength(currentEvent.node.hashWorkingBlock):  # zmienic wydarzenie nowego bloku tylko w momencie nowo dodany blok do blockchainu tworzy nowy najdluzszy lancuch
+                            if not bool(currentEvent.node.hashWorkingBlock) or currentEvent.node.blockchain.calculateBlockchainLength(currentEvent.block) > currentEvent.node.blockchain.calculateBlockchainLength(currentEvent.node.hashWorkingBlock):  # zmienic wydarzenie nowego bloku tylko w momencie nowo dodany blok do blockchainu tworzy nowy najdluzszy lancuch
                                 self.queue.events.remove(self.findBlockEvent(self.nodes[currentEvent.node.nodeId]))  # znalezc w kolejce zdarzenie wykopania nowego bloku przez aktualnie badany wezel i je usunac
                                 self.nodes[currentEvent.node.nodeId].availableTransactions = self.updateAvailableTransactions(currentEvent.block, currentEvent.node.availableTransactions)  # aktualizuje dostepne transakje danego wezla
                                 self.queue.events.append(self.scheduleNewBlockEvent(currentTime, currentEvent.node))  # dodac nowe zdarzenie wykopania bloku
-                                currentEvent.node.hashWorkingBlock = currentEvent.block.blockId  # zmiana aktualnego haszu bloku nad ktorym aktualnie pracuje wezel po stworzeniu bloku
+                                currentEvent.node.hashWorkingBlock = currentEvent.block  # zmiana aktualnego haszu bloku nad ktorym aktualnie pracuje wezel po stworzeniu bloku
 
                         for neighbor in currentEvent.node.neighbors:
                             self.queue.events.append(self.schedulePropagateBlockEvent(currentEvent.node, currentTime, currentEvent.block, neighbor))  # zdarzenie propagacji do kazdego sasiada
@@ -199,22 +201,6 @@ class Simulation:
                 availableTransactions.remove(transaction)
         return availableTransactions
 
-    def updateStaleBlocks(self, node):
-        newStaleBlockIds = node.blockchain.findStaleBlocks(self.numberOfConfirmationBlocks)
-        if len(newStaleBlockIds) > 0:
-            newStaleBlocks = []
-            for blockId in newStaleBlockIds:
-                for block in node.blockchain.blockList:
-                    if blockId == block.blockId:
-                        newStaleBlocks.append(block)
-                        break
-            staleTransactions = []
-            for staleBlock in newStaleBlocks:
-                staleTransactions.extend(staleBlock.transactions)
-            for node in self.nodes:
-                node.availableTransactions.extend(staleTransactions)
-            self.staleBlocks.extend(newStaleBlocks)
-
     def exponentialDistribution(self, averageTime):
         time = -math.log(1 - random.uniform(0, 1)) / (1 / averageTime)
         return time
@@ -260,10 +246,44 @@ class Simulation:
         propagateBlockEvent.printEventInfo('NEW EVENT SCHEDULED', time)
         return propagateBlockEvent
 
+    def confirmBlock(self, nodeId, time):
+        iterationBlock = self.nodes[nodeId].blockchain.blockList[-1]
+        flag = True
+        for i in range(self.numberOfConfirmationBlocks):
+            if iterationBlock.previousBlock is None:
+                flag = False
+                break
+            iterationBlock = iterationBlock.previousBlock
+        if flag and not bool(iterationBlock.blockConfirmationTime):
+            iterationBlock.blockConfirmationTime = time
+            return iterationBlock
+        else:
+            return None
+
+    def updateStaleBlocks(self, confirmedBlock, nodeId):
+        if confirmedBlock is not None:
+            lookingForBlock = confirmedBlock.previousBlock
+            potentialStaleBlocks = []
+            while True:
+                for block in reversed(self.nodes[nodeId].blockchain.blockList): # TODO potencjalnie mozna nie iterowac po calej liscie zeby przyspieszyc program
+                    if block != lookingForBlock and block != confirmedBlock and block.previousBlock == lookingForBlock:
+                        if block not in self.staleBlocks:
+                            potentialStaleBlocks.append(block)
+                            self.staleBlocks.append(block)
+                            for node in self.nodes:
+                                node.availableTransactions.extend(block.transactions) # TODO uproszczenie ze nie ma propagacji tych transakcji tylko automatycznie sa dodawane do listy dla kazdego wezla
+                                node.availableTransactions = list(dict.fromkeys(node.availableTransactions))
+
+                if len(potentialStaleBlocks) > 0:
+                    lookingForBlock = potentialStaleBlocks[0]
+                    potentialStaleBlocks.pop(0)
+                else:
+                    break
+
 
     # CALCULATE SIMULATION METRICS
     def calculateSimulationMetrics(self):
-        self.calculator = Calculator(self.nodes, self.staleBlocks)
+        self.calculator = Calculator(self.nodes, self.staleBlocks, self.numberOfConfirmationBlocks)
         self.calculator.calculate()
 
 
@@ -276,7 +296,7 @@ class Simulation:
         print('')
         print('--------------- TESTING - BLOCKCHAINS ---------------')
         for i in self.nodes:
-            blockchainIds = [(x.blockId, str(x.previousBlockId)) for x in i.blockchain.blockList]
+            blockchainIds = [(x.blockId, str(None if x.previousBlock is None else x.previousBlock.blockId)) for x in i.blockchain.blockList]
             print('[Node ID - ' + str(i.nodeId) + '] Blockchain: ' + str(blockchainIds))
         print('')
         print('--------------- TESTING - TRANSACTIONS ---------------')
