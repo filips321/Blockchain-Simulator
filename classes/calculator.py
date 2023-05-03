@@ -1,21 +1,32 @@
+import statistics
+
+
 class Calculator:
     nodes: []
     staleBlocks: []
+    confirmedTransactions: []
+    confirmedBlocks: []
     numberOfConfirmationBlocks: int
 
-    def __init__(self, nodes, staleBlocks, numberOfConfirmationBlocks):
+    def __init__(self, nodes, staleBlocks, numberOfConfirmationBlocks, confirmedTransactions, confirmedBlocks):
         self.nodes = nodes
         self.staleBlocks = staleBlocks
+        self.confirmedTransactions = confirmedTransactions
+        self.confirmedBlocks = confirmedBlocks
         self.numberOfConfirmationBlocks = numberOfConfirmationBlocks
 
     def calculate(self):
-        finalBlockList = self.nodes[0].blockchain.blockList[:-self.numberOfConfirmationBlocks or None] # TODO znalezc wszystkie z czasem potwierdzenia
-        numberOfConfirmedBlocks = len(finalBlockList)
+        numberOfConfirmedBlocks = len(self.confirmedBlocks)
+        numberOfConfirmedTransactions = len(self.confirmedTransactions)
         numberOfStaleBlocks = len(self.staleBlocks)
-        self.printCalculations(numberOfConfirmedBlocks, numberOfStaleBlocks)
+        averageTransactionConfirmationDelay = statistics.fmean([x.transactionConfirmationTime - x.transactionCreationTime for x in self.confirmedTransactions])
 
-    def printCalculations(self, numberOfConfirmedBlocks, numberOfStaleBlocks):
+        self.printCalculations(numberOfConfirmedBlocks, numberOfConfirmedTransactions, numberOfStaleBlocks, averageTransactionConfirmationDelay)
+
+    def printCalculations(self, numberOfConfirmedBlocks, numberOfConfirmedTransactions, numberOfStaleBlocks, averageTransactionConfirmationDelay):
         print('')
         print('--------------- CALCULATOR - RESULTS ---------------')
-        print('Number of confirmed blocks - ' + str(numberOfConfirmedBlocks))
-        print('Number of stale blocks - ' + str(numberOfStaleBlocks))
+        print('Number of confirmed blocks - ' + str(numberOfConfirmedBlocks) + ': ' + str([x.blockId for x in self.confirmedBlocks]))
+        print('Number of confirmed transactions - ' + str(numberOfConfirmedTransactions) + ': ' + str([x.transactionId for x in self.confirmedTransactions]))
+        print('Number of stale blocks - ' + str(numberOfStaleBlocks) + ': ' + str([x.blockId for x in self.staleBlocks]))
+        print('Average transaction confirmation delay - ' + str(averageTransactionConfirmationDelay))

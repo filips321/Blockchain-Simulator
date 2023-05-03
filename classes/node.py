@@ -13,6 +13,7 @@ class Node:
     hashWorkingBlock: None
     neighbors: []
     availableTransactions: []
+    usedTransactions: []
     blockchain: Blockchain
 
     def __init__(self, nodeId, nodeType, averagePowPosTime):
@@ -23,6 +24,7 @@ class Node:
         self.yGeography = self.generateLocation()[1]
         self.neighbors = []
         self.availableTransactions = []
+        self.usedTransactions = []
         self.blockchain = Blockchain()
         self.hashWorkingBlock = None
 
@@ -42,7 +44,7 @@ class Node:
         return time
 
     def checkTransactionDuplicate(self, transaction):
-        if transaction in self.availableTransactions:
+        if transaction in self.availableTransactions or transaction in self.usedTransactions:
             return True
         else:
             return False
@@ -58,3 +60,6 @@ class Node:
         for neighbor in self.neighbors:
             string += str(neighbor.nodeId) + ' '
         return string
+
+    def updateUsedTransactions(self, block):
+        self.usedTransactions.extend(block.transactions)
