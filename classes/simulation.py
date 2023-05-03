@@ -1,3 +1,4 @@
+import collections
 import math
 import random
 import geopy.distance
@@ -275,9 +276,12 @@ class Simulation:
         for transaction in confirmedBlock.transactions:
             transaction.transactionConfirmationTime = time
             self.confirmedTransactions.append(transaction)
+            for node in self.nodes:
+                if transaction in node.availableTransactions:
+                    node.availableTransactions.remove(transaction)
 
 
-    def updateStaleBlocks(self, confirmedBlock, nodeId):
+    def updateStaleBlocks(self, confirmedBlock, nodeId): # TODO cos jest zle i dw razy dodaje te same transakcje do blokow a niektorych wgl nie dodaje
         lookingForBlock = confirmedBlock.previousBlock
         potentialStaleBlocks = []
         while True:
@@ -287,8 +291,17 @@ class Simulation:
                         potentialStaleBlocks.append(block)
                         self.staleBlocks.append(block)
                         transactionsToBeAdded = [x for x in block.transactions if x not in self.confirmedTransactions]
+                        transactionsToBeAdded2 = []
+                        for transaction in transactionsToBeAdded:
+                            flag = True
+                            for node in self.nodes:
+                                if collections.Counter(node.usedTransactions)[transaction] > 1:
+                                    flag = False
+                                    break
+                            if flag:
+                                transactionsToBeAdded2.append(transaction)
                         for node in self.nodes:
-                            node.availableTransactions.extend(transactionsToBeAdded) # TODO uproszczenie ze nie ma propagacji tych transakcji tylko automatycznie sa dodawane do listy dla kazdego wezla
+                            node.availableTransactions.extend(transactionsToBeAdded2) # TODO uproszczenie ze nie ma propagacji tych transakcji tylko automatycznie sa dodawane do listy dla kazdego wezla
                             node.availableTransactions = list(dict.fromkeys(node.availableTransactions))
 
             if len(potentialStaleBlocks) > 0:
