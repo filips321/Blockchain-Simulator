@@ -57,6 +57,7 @@ class Simulation:
 
         # poczatek symulacji - generowanie wezlow, pierwsze zdarzenie nowej transakcji, pierwsze zdarzenie nowego bloku
         self.generateNodes()
+        print('Nodes generated')
         self.defineNeighbors()
 
         self.queue.events.append(self.scheduleNewTransactionEvent(currentTime))
@@ -70,7 +71,7 @@ class Simulation:
             if currentTime > self.simulationTime:
                 break
             self.queue.events.pop(0)
-            currentEvent.printEventInfo('CURRENT EVENT', currentTime)
+            # currentEvent.printEventInfo('CURRENT EVENT', currentTime)
 
             match currentEvent.eventType:
                 case 'newTransaction':
@@ -146,7 +147,9 @@ class Simulation:
 
     def defineNeighbors(self):
         self.primAlgorithm()  # TODO bardzo opoznia dzialanie programu
+        print('Prim neighbors defined')
         self.defineMissingNeighbors()
+        print('Missing neighbors defined')
 
     def primAlgorithm(self):
         tempNodes = self.nodes.copy()
@@ -216,7 +219,7 @@ class Simulation:
 
     def scheduleNewTransactionEvent(self, time):
         transactionEvent = Event('newTransaction', time + self.exponentialDistribution(self.averageTransactionBreak), random.choice(self.nodes))
-        transactionEvent.printEventInfo('NEW EVENT SCHEDULED', time)
+        # transactionEvent.printEventInfo('NEW EVENT SCHEDULED', time)
         return transactionEvent
 
     def scheduleInitialBlockEvents(self, time):
@@ -225,13 +228,13 @@ class Simulation:
             if node.nodeType == 'miner':
                 blockEvent = Event('newBlock', time + node.declareMiningTime(), node)
                 blockEvents.append(blockEvent)
-                blockEvent.printEventInfo('NEW EVENT SCHEDULED', time)
+                # blockEvent.printEventInfo('NEW EVENT SCHEDULED', time)
         #blockEvents.sort(key=lambda x: x.eventTime)
         return blockEvents
 
     def scheduleNewBlockEvent(self, time, node):
         blockEvent = Event('newBlock', time + node.declareMiningTime(), node)
-        blockEvent.printEventInfo('NEW EVENT SCHEDULED', time)
+        # blockEvent.printEventInfo('NEW EVENT SCHEDULED', time)
         return blockEvent
 
     def findBlockEvent(self, node):
@@ -244,7 +247,7 @@ class Simulation:
         propagationLatency = distance * self.propagationLatency
         propagateTransactionEvent = Event('propagateTransaction', time + self.localVerificationLatency + propagationLatency, neighbor)
         propagateTransactionEvent.transaction = transaction
-        propagateTransactionEvent.printEventInfo('NEW EVENT SCHEDULED', time)
+        # propagateTransactionEvent.printEventInfo('NEW EVENT SCHEDULED', time)
         return propagateTransactionEvent
 
     def schedulePropagateBlockEvent(self, currentNode, time, block, neighbor):
@@ -252,7 +255,7 @@ class Simulation:
         propagationLatency = distance * self.propagationLatency
         propagateBlockEvent = Event('propagateBlock', time + self.localVerificationLatency + propagationLatency, neighbor)
         propagateBlockEvent.block = block
-        propagateBlockEvent.printEventInfo('NEW EVENT SCHEDULED', time)
+        # propagateBlockEvent.printEventInfo('NEW EVENT SCHEDULED', time)
         return propagateBlockEvent
 
     def confirmBlock(self, nodeId, time):
@@ -324,7 +327,7 @@ class Simulation:
         print('Miners to nodes proportion [0-1] - ' + str(self.minersProportion))
         print('Number of neighbors - ' + str(self.numberOfNeighbors))
         print('Propagation latency [s] - ' + str(self.propagationLatency))
-        print('Local block/transaction verification latency [s] - ' + str(self.minersProportion))
+        print('Local block/transaction verification latency [s] - ' + str(self.localVerificationLatency))
         print('Max block size [kB] - ' + str(self.blockMaxSize))
         print('Average transaction size [kB] - ' + str(self.averageTransactionSize))
         print('Average break between new transactions [s] - ' + str(self.averageTransactionBreak))
