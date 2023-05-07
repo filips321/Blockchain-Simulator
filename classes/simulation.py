@@ -19,7 +19,7 @@ class Simulation:
     averageTransactionBreak: float
     propagationLatency: int
     localVerificationLatency: int
-    transactionSize: int
+    averageTransactionSize: int
     blockMaxSize: int
     numberOfConfirmationBlocks: int
     nodes: []
@@ -29,7 +29,7 @@ class Simulation:
     confirmedTransactions = []
     confirmedBlocks = []
 
-    def __init__(self, simulationTime, numberOfNodes, minersProportion, numberOfNeighbors, averageTransactionsBreak, averagePowPosTime, propagationLatency, localVerificationLatency, transactionSize, blockMaxSize, numberOfConfirmationBlocks):
+    def __init__(self, simulationTime, numberOfNodes, minersProportion, numberOfNeighbors, averageTransactionsBreak, averagePowPosTime, propagationLatency, localVerificationLatency, averageTransactionSize, blockMaxSize, numberOfConfirmationBlocks):
         self.simulationTime = simulationTime
         self.numberOfNodes = numberOfNodes
         self.minersProportion = minersProportion
@@ -38,7 +38,7 @@ class Simulation:
         self.averagePowPosTime = averagePowPosTime
         self.propagationLatency = propagationLatency
         self.localVerificationLatency = localVerificationLatency
-        self.transactionSize = transactionSize
+        self.averageTransactionSize = averageTransactionSize
         self.blockMaxSize = blockMaxSize
         self.numberOfConfirmationBlocks = numberOfConfirmationBlocks
         self.nodes = []
@@ -74,7 +74,7 @@ class Simulation:
 
             match currentEvent.eventType:
                 case 'newTransaction':
-                    transaction = Transaction(currentNumberOfTransactions, currentTime, self.transactionSize, currentEvent.node)
+                    transaction = Transaction(currentNumberOfTransactions, currentTime, self.averageTransactionSize, currentEvent.node)
                     currentNumberOfTransactions += 1
                     self.nodes[currentEvent.node.nodeId].availableTransactions.append(transaction)  # dodac transakcje do availableTransactions danego wezla
 
@@ -145,7 +145,7 @@ class Simulation:
         return flag
 
     def defineNeighbors(self):
-        self.primAlgorithm()
+        self.primAlgorithm()  # TODO bardzo opoznia dzialanie programu
         self.defineMissingNeighbors()
 
     def primAlgorithm(self):
@@ -195,7 +195,7 @@ class Simulation:
     def calculateDistance(self, node1, node2):
         coords1 = (node1.xGeography, node1.yGeography)
         coords2 = (node2.xGeography, node2.yGeography)
-        distance = geopy.distance.distance(coords1, coords2).km
+        distance = geopy.distance.great_circle(coords1, coords2).km
         return distance
 
     def deleteFromListById(self, list, id):
@@ -326,8 +326,8 @@ class Simulation:
         print('Propagation latency [s] - ' + str(self.propagationLatency))
         print('Local block/transaction verification latency [s] - ' + str(self.minersProportion))
         print('Max block size [kB] - ' + str(self.blockMaxSize))
-        print('Transaction size [kB] - ' + str(self.transactionSize))
-        print('Average break between new transactions [s] - ' + str(self.transactionSize))
+        print('Average transaction size [kB] - ' + str(self.averageTransactionSize))
+        print('Average break between new transactions [s] - ' + str(self.averageTransactionBreak))
         print('Average PoW/PoS time [s] - ' + str(self.averagePowPosTime))
         print('Number of confirmation blocks - ' + str(self.numberOfConfirmationBlocks))
 

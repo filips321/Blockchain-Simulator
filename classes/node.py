@@ -32,8 +32,8 @@ class Node:
         while True:
             xTemp = random.uniform(-90, 90)
             yTemp = random.uniform(-180, 180)
-            if globe.is_land(xTemp, yTemp):
-                return xTemp, yTemp
+            # if globe.is_land(xTemp, yTemp): # TODO narazie generowanie tylko na ladzie usuniete
+            return xTemp, yTemp
 
     def declareMiningTime(self):
         miningTime = self.exponentialDistribution(self.averagePowPosTime)
