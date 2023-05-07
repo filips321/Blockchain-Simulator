@@ -108,14 +108,12 @@ class Simulation:
                 case 'propagateBlock':
                     if not self.nodes[currentEvent.node.nodeId].checkBlockDuplicate(currentEvent.block):  # jezeli tego bloku nie ma w blockchainie wezla jeszcze to dodaj i propaguj dalej
                         self.nodes[currentEvent.node.nodeId].blockchain.blockList.append(currentEvent.block)
-                        if self.nodes[currentEvent.node.nodeId].nodeType == 'node':
-                            self.nodes[currentEvent.node.nodeId].availableTransactions = self.updateAvailableTransactions(currentEvent.block, currentEvent.node.availableTransactions)
-                            self.nodes[currentEvent.node.nodeId].updateUsedTransactions(currentEvent.block)
-                        elif self.nodes[currentEvent.node.nodeId].nodeType == 'miner':
+                        self.nodes[currentEvent.node.nodeId].availableTransactions = self.updateAvailableTransactions(currentEvent.block, currentEvent.node.availableTransactions)
+                        self.nodes[currentEvent.node.nodeId].updateUsedTransactions(currentEvent.block)
+
+                        if self.nodes[currentEvent.node.nodeId].nodeType == 'miner':
                             if currentEvent.node.hashWorkingBlock is None or currentEvent.node.blockchain.calculateBlockchainLength(currentEvent.block) > currentEvent.node.blockchain.calculateBlockchainLength(currentEvent.node.hashWorkingBlock):  # zmienic wydarzenie nowego bloku tylko w momencie nowo dodany blok do blockchainu tworzy nowy najdluzszy lancuch
                                 self.queue.events.remove(self.findBlockEvent(self.nodes[currentEvent.node.nodeId]))  # znalezc w kolejce zdarzenie wykopania nowego bloku przez aktualnie badany wezel i je usunac
-                                self.nodes[currentEvent.node.nodeId].availableTransactions = self.updateAvailableTransactions(currentEvent.block, currentEvent.node.availableTransactions)  # aktualizuje dostepne transakje danego wezla
-                                self.nodes[currentEvent.node.nodeId].updateUsedTransactions(currentEvent.block)
                                 self.queue.events.append(self.scheduleNewBlockEvent(currentTime, currentEvent.node))  # dodac nowe zdarzenie wykopania bloku
                                 currentEvent.node.hashWorkingBlock = currentEvent.block  # zmiana aktualnego haszu bloku nad ktorym aktualnie pracuje wezel po stworzeniu bloku
 
@@ -313,7 +311,7 @@ class Simulation:
 
     # CALCULATE SIMULATION METRICS
     def calculateSimulationMetrics(self):
-        self.calculator = Calculator(self.nodes, self.staleBlocks, self.numberOfConfirmationBlocks, self.confirmedTransactions, self.confirmedBlocks)
+        self.calculator = Calculator(self.nodes, self.staleBlocks, self.numberOfConfirmationBlocks, self.confirmedBlocks)
         self.calculator.calculate()
 
 
