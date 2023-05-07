@@ -1,3 +1,4 @@
+import cProfile
 import sys
 from classes import simulation
 
@@ -28,7 +29,10 @@ if __name__ == '__main__':
     # simulation properties printing
     simulation.printSimulationProperties()
 
-    # metrics calculation
+    # simulation input printing
+    simulation.printSimulationInput()
+
+    # metrics calculation and printing
     simulation.calculateSimulationMetrics()
 
     # stop saving console output to file

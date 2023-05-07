@@ -311,11 +311,26 @@ class Simulation:
 
     # CALCULATE SIMULATION METRICS
     def calculateSimulationMetrics(self):
-        self.calculator = Calculator(self.nodes, self.staleBlocks, self.numberOfConfirmationBlocks, self.confirmedBlocks)
+        self.calculator = Calculator(self.nodes, self.staleBlocks, self.confirmedBlocks, self.confirmedTransactions)
         self.calculator.calculate()
 
 
     # SIMULATION PROPERTIES PRINTING FUNCTIONS
+    def printSimulationInput(self):
+        print('')
+        print('--------------- SIMULATION - INPUT ---------------')
+        print('Simulation time [s] - ' + str(self.simulationTime))
+        print('Number of nodes - ' + str(self.numberOfNodes))
+        print('Miners to nodes proportion [0-1] - ' + str(self.minersProportion))
+        print('Number of neighbors - ' + str(self.numberOfNeighbors))
+        print('Propagation latency [s] - ' + str(self.propagationLatency))
+        print('Local block/transaction verification latency [s] - ' + str(self.minersProportion))
+        print('Max block size [kB] - ' + str(self.blockMaxSize))
+        print('Transaction size [kB] - ' + str(self.transactionSize))
+        print('Average break between new transactions [s] - ' + str(self.transactionSize))
+        print('Average PoW/PoS time [s] - ' + str(self.averagePowPosTime))
+        print('Number of confirmation blocks - ' + str(self.numberOfConfirmationBlocks))
+
     def printSimulationProperties(self):
         print('')
         print('--------------- TESTING - NODES ---------------')
