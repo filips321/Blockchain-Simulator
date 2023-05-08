@@ -20,10 +20,19 @@ class Calculator:
         completenessOfTransactions = self.calculateTransactionsParameters()[0]
         duplicateTransactions = self.calculateTransactionsParameters()[1]
         averageTransactionConfirmationDelay = self.calculateTransactionsParameters()[2]
-
         numberOfStaleBlocks = len(self.staleBlocks)
+        numberOfMiners = len([x for x in self.nodes if x.nodeType == 'miner'])
+        numberOfNodes = len([x for x in self.nodes if x.nodeType == 'node'])
 
-        self.printCalculations(numberOfConfirmedBlocks, numberOfConfirmedTransactions, numberOfStaleBlocks, averageTransactionConfirmationDelay, completenessOfTransactions, duplicateTransactions)
+        allBlocks = self.confirmedBlocks.copy()
+        allBlocks.extend(self.staleBlocks)
+        allBlocks.sort(key=lambda x: x.blockId)
+        averageBreakBetweenBlocks = 0
+        for i in range(len(allBlocks) - 1):
+            averageBreakBetweenBlocks += allBlocks[i+1].blockCreationTime - allBlocks[i].blockCreationTime
+        averageBreakBetweenBlocks = averageBreakBetweenBlocks / (len(allBlocks) - 1)
+
+        self.printCalculations(numberOfConfirmedBlocks, numberOfConfirmedTransactions, numberOfStaleBlocks, averageTransactionConfirmationDelay, completenessOfTransactions, duplicateTransactions, numberOfMiners, numberOfNodes, averageBreakBetweenBlocks)
 
     def calculateTransactionsParameters(self):
         averageTransactionConfirmationDelay = statistics.fmean([x.transactionConfirmationTime - x.transactionCreationTime for x in self.confirmedTransactions])
@@ -55,14 +64,17 @@ class Calculator:
 
         return completenessOfTransactions, duplicatedTransactions, averageTransactionConfirmationDelay
 
-    def printCalculations(self, numberOfConfirmedBlocks, numberOfConfirmedTransactions, numberOfStaleBlocks, averageTransactionConfirmationDelay, completenessOfTransactions, duplicateTransactions):
+    def printCalculations(self, numberOfConfirmedBlocks, numberOfConfirmedTransactions, numberOfStaleBlocks, averageTransactionConfirmationDelay, completenessOfTransactions, duplicateTransactions, numberOfMiners, numberOfNodes, averageBreakBetweenBlocks):
         print('')
         print('--------------- CALCULATOR - SUPPORTING CHECKS ---------------')
         print('Completeness of confirmed transactions (all indexes included) - ' + str(completenessOfTransactions[0]) + ': ' + str(completenessOfTransactions[1]))
         print('Duplicated transactions - ' + str(duplicateTransactions[0]) + ': ' + str(duplicateTransactions[1]))
+        print('Number of miners - ' + str(numberOfMiners))
+        print('Number of full/light nodes - ' + str(numberOfNodes))
         print('')
         print('--------------- CALCULATOR - RESULTS ---------------')
         print('Number of confirmed blocks - ' + str(numberOfConfirmedBlocks) + ': ' + str([x.blockId for x in self.confirmedBlocks]))
+        print('Average break between blocks [s] - ' + str(averageBreakBetweenBlocks))
         print('Number of confirmed transactions - ' + str(numberOfConfirmedTransactions))
         print('Number of stale blocks - ' + str(numberOfStaleBlocks) + ': ' + str([x.blockId for x in self.staleBlocks]))
-        print('Average transaction confirmation delay - ' + str(averageTransactionConfirmationDelay))
+        print('Average transaction confirmation delay [s] - ' + str(averageTransactionConfirmationDelay))

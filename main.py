@@ -4,10 +4,10 @@ from classes import simulation
 
 
 # starting parameters
-simulationTime = 20000 # [s]
+simulationTime = 1000 # [s]
 numberOfNodes = 500
 minersProportion = 0.05 # proporcja liczby gornikow do full nodes (miners/fullNodes), zakres 0-1 (np. 0.2 znaczy ze 20% to gornicy)
-numberOfNeighbors = 3  # [2, inf> / musi byc mniejsze od liczby wezlow
+numberOfNeighbors = 5  # [2, inf> / musi byc mniejsze od liczby wezlow
 propagationLatency = 0.000005  # per km / opoznienie wynosi okolo 5us/km
 localVerificationLatency = 0.000005  # opoznienie wynikajace z weryfikacji poprawnosci transakcji/bloku TODO sprawdzic ile powinna wynosic ta wartosc okolo
 blockMaxSize = 1000  # [kB] domyslnie dla BTC jest 1MB (1000kB), transakcje sa zapisywane w bloku do momentu wygenerwoania nowego
