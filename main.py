@@ -1,12 +1,10 @@
-import cProfile
-import sys
 from classes import simulation
 
 
 # starting parameters
-simulationTime = 5000 # [s]
+simulationTime = 5000  # [s]
 numberOfNodes = 200
-minersProportion = 0.2 # proporcja liczby gornikow do full nodes (miners/fullNodes), zakres 0-1 (np. 0.2 znaczy ze 20% to gornicy)
+minersProportion = 0.2   # proporcja liczby gornikow do full nodes (miners/fullNodes), zakres 0-1 (np. 0.2 znaczy ze 20% to gornicy)
 numberOfNeighbors = 3  # [2, inf> / musi byc mniejsze od liczby wezlow
 propagationLatency = 0.000005  # per km / opoznienie wynosi okolo 5us/km
 localVerificationLatency = 0.000005  # opoznienie wynikajace z weryfikacji poprawnosci transakcji/bloku TODO sprawdzic ile powinna wynosic ta wartosc okolo
