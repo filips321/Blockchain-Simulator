@@ -354,17 +354,22 @@ class Simulation:
         for i in self.nodes:
             print('[ID ' + str(i.nodeId) + '] Type: ' + i.nodeType + ', x: ' + str(i.xGeography) + ', y: ' + str(i.yGeography) + ', neighbors: ' + self.printNeighbors(i))
         print('')
-        print('--------------- TESTING - BLOCKCHAINS ---------------')
-        for i in self.nodes:
-            blockchainIds = [(x.blockId, str(None if x.previousBlock is None else x.previousBlock.blockId)) for x in i.blockchain.blockList]
-            print('[Node ID - ' + str(i.nodeId) + '] Blockchain: ' + str(blockchainIds))
+        print('--------------- TESTING - BLOCKS ---------------')
+        for i in self.nodes[0].blockchain.blockList:
+            ids = [x.transactionId for x in i.transactions]
+            print('[Block ID - ' + str(i.blockId) + '] transactions (' + str(len(i.transactions)) + '): ' + str(ids))
         print('')
-        print('--------------- TESTING - TRANSACTIONS ---------------')
-        for i in range(len(self.nodes[0].blockchain.blockList)):
-            for j in self.nodes:
-                for p in j.blockchain.blockList:
-                    if p.blockId == i:
-                        print('[Block ID - ' + str(i) + '] Node: ' + str(j.nodeId) + ' Transactions: ' + str([x.transactionId for x in p.transactions]))
+        # print('--------------- TESTING - BLOCKCHAINS ---------------')
+        # for i in self.nodes:
+        #     blockchainIds = [(x.blockId, str(None if x.previousBlock is None else x.previousBlock.blockId)) for x in i.blockchain.blockList]
+        #     print('[Node ID - ' + str(i.nodeId) + '] Blockchain: ' + str(blockchainIds))
+        # print('')
+        # print('--------------- TESTING - TRANSACTIONS ---------------')
+        # for i in range(len(self.nodes[0].blockchain.blockList)):
+        #     for j in self.nodes:
+        #         for p in j.blockchain.blockList:
+        #             if p.blockId == i:
+        #                 print('[Block ID - ' + str(i) + '] Node: ' + str(j.nodeId) + ' Transactions: ' + str([x.transactionId for x in p.transactions]))
         print('')
         print('--------------- TESTING - STALE BLOCKS ---------------')
         staleBlocks = [(x.blockId, [y.transactionId for y in x.transactions]) for x in self.staleBlocks]
