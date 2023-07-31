@@ -49,7 +49,7 @@ class Simulation:
 
     # CORE SIMULATION FUNCTION
     def startSimulation(self):
-        # ustawienie stanu poczatkowego symulacji
+        # set the initial state of the simulation
         currentTime = 0
         currentNumberOfBlocks = 0
         currentNumberOfTransactions = 0
@@ -65,12 +65,15 @@ class Simulation:
 
         # glowna petla symulacji
         while currentTime < self.simulationTime:
-            self.queue.events.sort(key=lambda x: x.eventTime)
-            currentEvent = self.queue.events[0]
+            # self.queue.events.sort(key=lambda x: x.eventTime)
+            # currentEvent = self.queue.events[0]
+            # currentEvent = min(self.queue.events, key=lambda x: x.eventTime)
+            currentEvent = self.findMin(self.queue.events)
             currentTime = currentEvent.eventTime
             if currentTime > self.simulationTime:
                 break
-            self.queue.events.pop(0)
+            # self.queue.events.pop(0)
+            self.queue.events.remove(currentEvent)
             # currentEvent.printEventInfo('CURRENT EVENT', currentTime)
 
             match currentEvent.eventType:
@@ -78,50 +81,46 @@ class Simulation:
                     transaction = Transaction(currentNumberOfTransactions, currentTime, self.averageTransactionSize, currentEvent.node)
                     currentNumberOfTransactions += 1
                     self.nodes[currentEvent.node.nodeId].availableTransactions.append(transaction)  # dodac transakcje do availableTransactions danego wezla
-
                     for neighbor in currentEvent.node.neighbors:
                         self.queue.events.append(self.schedulePropagateTransactionEvent(currentEvent.node, currentTime, transaction, neighbor))  # zdarzenie propagacji do kazdego sasiada
-
                     self.queue.events.append(self.scheduleNewTransactionEvent(currentTime))  # nastepna transakcja
+
+                case 'propagateTransaction':
+                    if not self.nodes[currentEvent.node[0].nodeId].checkTransactionDuplicate(currentEvent.transaction):  # jezeli tej transakcji nie ma w wezle jeszcze to dodaj do dostepnych transakcji i propaguj dalej
+                        self.nodes[currentEvent.node[0].nodeId].availableTransactions.append(currentEvent.transaction)
+                        for neighbor in currentEvent.node[0].neighbors:
+                            self.queue.events.append(self.schedulePropagateTransactionEvent(currentEvent.node, currentTime, currentEvent.transaction, neighbor))  # zdarzenie propagacji do kazdego sasiada
+
                 case 'newBlock':
                     block = Block(currentNumberOfBlocks, currentTime, self.blockMaxSize, currentEvent.node, currentEvent.node.hashWorkingBlock)
                     currentNumberOfBlocks += 1
                     block.fillWithTransactions(currentEvent.node.availableTransactions)  # zapelnia blok transakcjami i aktualizuje dostepne transakcje danego wezla
                     self.nodes[currentEvent.node.nodeId].updateUsedTransactions(block)
                     self.nodes[currentEvent.node.nodeId].blockchain.blockList.append(block) # dodac block do blockchainu danego wezla
-
                     for neighbor in currentEvent.node.neighbors:
                         self.queue.events.append(self.schedulePropagateBlockEvent(currentEvent.node, currentTime, block, neighbor))
-
                     self.queue.events.append(self.scheduleNewBlockEvent(currentTime, currentEvent.node))  # wezel deklaruje kiedy stworzy nowy blok
                     currentEvent.node.hashWorkingBlock = block # zmiana aktualnego haszu bloku nad ktorym aktualnie pracuje wezel po stworzeniu bloku
-
                     confirmedBlock = self.confirmBlock(currentEvent.node.nodeId, currentTime) # zatwierdzanie waznosci bloku stworzonego o 'numberOfConfirmationBlocks' blokow wczesniej (dla BTC 6)
                     if confirmedBlock is not None:
                         self.confirmTransactions(confirmedBlock, currentTime) # TODO uproszczenie ze czas zatwierdzenia transakcji dla wszystkich wezlow dzieje sie w tym samym momencie gdy stworzy sie potwierdzajacy blok w jednym wezle
                         self.updateStaleBlocks(confirmedBlock, currentEvent.node.nodeId)
 
-                case 'propagateTransaction':
-                    if not self.nodes[currentEvent.node.nodeId].checkTransactionDuplicate(currentEvent.transaction):  # jezeli tej transakcji nie ma w wezle jeszcze to dodaj do dostepnych transakcji i propaguj dalej
-                        self.nodes[currentEvent.node.nodeId].availableTransactions.append(currentEvent.transaction)
-                        for neighbor in currentEvent.node.neighbors:
-                            self.queue.events.append(self.schedulePropagateTransactionEvent(currentEvent.node, currentTime, currentEvent.transaction, neighbor))  # zdarzenie propagacji do kazdego sasiada
                 case 'propagateBlock':
-                    if not self.nodes[currentEvent.node.nodeId].checkBlockDuplicate(currentEvent.block):  # jezeli tego bloku nie ma w blockchainie wezla jeszcze to dodaj i propaguj dalej
-                        self.nodes[currentEvent.node.nodeId].blockchain.blockList.append(currentEvent.block)
-                        self.nodes[currentEvent.node.nodeId].availableTransactions = self.updateAvailableTransactions(currentEvent.block, currentEvent.node.availableTransactions)
-                        self.nodes[currentEvent.node.nodeId].updateUsedTransactions(currentEvent.block)
-
-                        if self.nodes[currentEvent.node.nodeId].nodeType == 'miner':
-                            if currentEvent.node.hashWorkingBlock is None or currentEvent.node.blockchain.calculateBlockchainLength(currentEvent.block) > currentEvent.node.blockchain.calculateBlockchainLength(currentEvent.node.hashWorkingBlock):  # zmienic wydarzenie nowego bloku tylko w momencie nowo dodany blok do blockchainu tworzy nowy najdluzszy lancuch
-                                self.queue.events.remove(self.findBlockEvent(self.nodes[currentEvent.node.nodeId]))  # znalezc w kolejce zdarzenie wykopania nowego bloku przez aktualnie badany wezel i je usunac
-                                self.queue.events.append(self.scheduleNewBlockEvent(currentTime, currentEvent.node))  # dodac nowe zdarzenie wykopania bloku
-                                currentEvent.node.hashWorkingBlock = currentEvent.block  # zmiana aktualnego haszu bloku nad ktorym aktualnie pracuje wezel po stworzeniu bloku
-
-                        for neighbor in currentEvent.node.neighbors:
+                    if not self.nodes[currentEvent.node[0].nodeId].checkBlockDuplicate(currentEvent.block):  # jezeli tego bloku nie ma w blockchainie wezla jeszcze to dodaj i propaguj dalej
+                        self.nodes[currentEvent.node[0].nodeId].blockchain.blockList.append(currentEvent.block)
+                        self.nodes[currentEvent.node[0].nodeId].availableTransactions = self.updateAvailableTransactions(currentEvent.block, currentEvent.node[0].availableTransactions)
+                        self.nodes[currentEvent.node[0].nodeId].updateUsedTransactions(currentEvent.block)
+                        if self.nodes[currentEvent.node[0].nodeId].nodeType == 'miner':
+                            if currentEvent.node[0].hashWorkingBlock is None or currentEvent.node[0].blockchain.calculateBlockchainLength(currentEvent.block) > currentEvent.node[0].blockchain.calculateBlockchainLength(currentEvent.node[0].hashWorkingBlock):  # zmienic wydarzenie nowego bloku tylko w momencie nowo dodany blok do blockchainu tworzy nowy najdluzszy lancuch
+                                self.queue.events.remove(self.findBlockEvent(self.nodes[currentEvent.node[0].nodeId]))  # znalezc w kolejce zdarzenie wykopania nowego bloku przez aktualnie badany wezel i je usunac
+                                self.queue.events.append(self.scheduleNewBlockEvent(currentTime, currentEvent.node[0]))  # dodac nowe zdarzenie wykopania bloku
+                                currentEvent.node[0].hashWorkingBlock = currentEvent.block  # zmiana aktualnego haszu bloku nad ktorym aktualnie pracuje wezel po stworzeniu bloku
+                        for neighbor in currentEvent.node[0].neighbors:
                             self.queue.events.append(self.schedulePropagateBlockEvent(currentEvent.node, currentTime, currentEvent.block, neighbor))  # zdarzenie propagacji do kazdego sasiada
+
                 case _:
-                    print('QUEUE IS EMPTY')
+                    print('INVALID EVENT TYPE OR EMPTY QUEUE')
 
 
     # SIMULATION SUPPORTING FUNCTIONS
@@ -168,8 +167,8 @@ class Simulation:
                         distance = tempDistance
                         minNode = potentialNeighbor
                         currentNode = node
-            minNode.neighbors.append(currentNode)
-            currentNode.neighbors.append(minNode)
+            minNode.neighbors.append((currentNode, self.calculateDistance(minNode, currentNode)))
+            currentNode.neighbors.append((minNode, self.calculateDistance(minNode, currentNode)))
             nodesIncluded.append(minNode)
             self.deleteFromListById(tempNodes, minNode.nodeId)
 
@@ -190,15 +189,22 @@ class Simulation:
                     if tempDistance < distance:
                         distance = tempDistance
                         minNode = potentialNeighbor
-                minNode.neighbors.append(node)
-                node.neighbors.append(minNode)
+                minNode.neighbors.append((node, self.calculateDistance(minNode, node)))
+                node.neighbors.append((minNode, self.calculateDistance(minNode, node)))
                 if len(minNode.neighbors) >= self.numberOfNeighbors:
                     self.deleteFromListById(tempNodes, minNode.nodeId)
 
     def calculateDistance(self, node1, node2):
-        coords1 = (node1.xGeography, node1.yGeography)
-        coords2 = (node2.xGeography, node2.yGeography)
-        distance = geopy.distance.great_circle(coords1, coords2).km
+        coords1 = node1.xGeography, node1.yGeography
+        coords2 = node2.xGeography, node2.yGeography
+        # distance = geopy.distance.great_circle(coords1, coords2).km
+        xdiff = abs(coords1[0] - coords2[0])
+        ydiff = coords1[1] - coords2[1]
+        if ydiff > 180:
+            ydiff = abs(ydiff - 360)
+        elif ydiff < -180:
+            ydiff = abs(ydiff + 360)
+        distance = (math.sqrt(pow(xdiff, 2) + pow(ydiff, 2))) * 111
         return distance
 
     def deleteFromListById(self, list, id):
@@ -243,7 +249,7 @@ class Simulation:
                 return event
 
     def schedulePropagateTransactionEvent(self, currentNode, time, transaction, neighbor):
-        distance = self.calculateDistance(currentNode, neighbor)
+        distance = neighbor[1]
         propagationLatency = distance * self.propagationLatency
         propagateTransactionEvent = Event('propagateTransaction', time + self.localVerificationLatency + propagationLatency, neighbor)
         propagateTransactionEvent.transaction = transaction
@@ -251,7 +257,7 @@ class Simulation:
         return propagateTransactionEvent
 
     def schedulePropagateBlockEvent(self, currentNode, time, block, neighbor):
-        distance = self.calculateDistance(currentNode, neighbor)
+        distance = neighbor[1]
         propagationLatency = distance * self.propagationLatency
         propagateBlockEvent = Event('propagateBlock', time + self.localVerificationLatency + propagationLatency, neighbor)
         propagateBlockEvent.block = block
@@ -312,6 +318,14 @@ class Simulation:
                 break
 
 
+    def findMin(self, list):
+        min = list[0]
+        for i in list:
+            if i.eventTime < min.eventTime:
+                min = i
+        return min
+
+
     # CALCULATE SIMULATION METRICS
     def calculateSimulationMetrics(self):
         self.calculator = Calculator(self.nodes, self.staleBlocks, self.confirmedBlocks, self.confirmedTransactions)
@@ -363,5 +377,5 @@ class Simulation:
     def printNeighbors(self, node):
         string = ''
         for i in node.neighbors:
-            string += str(i.nodeId) + ' '
+            string += str(i[0].nodeId) + ' '
         return string
