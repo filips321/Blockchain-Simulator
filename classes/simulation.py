@@ -298,7 +298,7 @@ class Simulation:
                     node.availableTransactions.remove(transaction)
 
 
-    def updateStaleBlocks(self, confirmedBlock, nodeId): # TODO cos jest zle i dw razy dodaje te same transakcje do blokow a niektorych wgl nie dodaje
+    def updateStaleBlocks(self, confirmedBlock, nodeId):
         lookingForBlock = confirmedBlock.previousBlock
         potentialStaleBlocks = []
         while True:

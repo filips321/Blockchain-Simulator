@@ -28,11 +28,11 @@ class Node:
         self.blockchain = Blockchain()
         self.hashWorkingBlock = None
 
-    def generateLocation(self):  # TODO - sprawdzic jak generuje, dodac proporcjonalna ilosc uzytkownik per kontynent (np. 0 na antarktydzie, duzo w USA)
+    def generateLocation(self):
         while True:
             xTemp = random.uniform(-90, 90)
             yTemp = random.uniform(-179, 180)
-            if globe.is_land(xTemp, yTemp):  # TODO narazie generowanie tylko na ladzie usuniete
+            if globe.is_land(xTemp, yTemp):
                 return xTemp, yTemp
 
     def declareMiningTime(self):

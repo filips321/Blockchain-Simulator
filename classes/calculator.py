@@ -37,7 +37,7 @@ class Calculator:
     def calculateTransactionsParameters(self):
         averageTransactionConfirmationDelay = statistics.fmean([x.transactionConfirmationTime - x.transactionCreationTime for x in self.confirmedTransactions])
 
-        completenessOfTransactions = True, None # TODO sprawdzic ta metryke czy dobrze liczy
+        completenessOfTransactions = True, None
         for i in range(len(self.confirmedTransactions)):
             for transaction in self.confirmedTransactions:
                 if i == transaction.transactionId:
