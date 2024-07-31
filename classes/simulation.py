@@ -78,50 +78,60 @@ class Simulation:
 
             match currentEvent.eventType:
                 case 'newTransaction':
-                    transaction = Transaction(currentNumberOfTransactions, currentTime, self.averageTransactionSize, currentEvent.node)
-                    currentNumberOfTransactions += 1
-                    self.nodes[currentEvent.node.nodeId].availableTransactions.append(transaction)  # dodac transakcje do availableTransactions danego wezla
-                    for neighbor in currentEvent.node.neighbors:
-                        self.queue.events.append(self.schedulePropagateTransactionEvent(currentEvent.node, currentTime, transaction, neighbor))  # zdarzenie propagacji do kazdego sasiada
-                    self.queue.events.append(self.scheduleNewTransactionEvent(currentTime))  # nastepna transakcja
-
+                    currentNumberOfTransactions = self.handleNewTransaction(currentNumberOfTransactions, currentTime, currentEvent)
                 case 'propagateTransaction':
-                    if not self.nodes[currentEvent.node[0].nodeId].checkTransactionDuplicate(currentEvent.transaction):  # jezeli tej transakcji nie ma w wezle jeszcze to dodaj do dostepnych transakcji i propaguj dalej
-                        self.nodes[currentEvent.node[0].nodeId].availableTransactions.append(currentEvent.transaction)
-                        for neighbor in currentEvent.node[0].neighbors:
-                            self.queue.events.append(self.schedulePropagateTransactionEvent(currentEvent.node, currentTime, currentEvent.transaction, neighbor))  # zdarzenie propagacji do kazdego sasiada
-
+                    self.handlePropagateTransaction(currentEvent, currentTime)
                 case 'newBlock':
-                    block = Block(currentNumberOfBlocks, currentTime, self.blockMaxSize, currentEvent.node, currentEvent.node.hashWorkingBlock)
-                    currentNumberOfBlocks += 1
-                    block.fillWithTransactions(currentEvent.node.availableTransactions)  # zapelnia blok transakcjami i aktualizuje dostepne transakcje danego wezla
-                    self.nodes[currentEvent.node.nodeId].updateUsedTransactions(block)
-                    self.nodes[currentEvent.node.nodeId].blockchain.blockList.append(block) # dodac block do blockchainu danego wezla
-                    for neighbor in currentEvent.node.neighbors:
-                        self.queue.events.append(self.schedulePropagateBlockEvent(currentEvent.node, currentTime, block, neighbor))
-                    self.queue.events.append(self.scheduleNewBlockEvent(currentTime, currentEvent.node))  # wezel deklaruje kiedy stworzy nowy blok
-                    currentEvent.node.hashWorkingBlock = block # zmiana aktualnego haszu bloku nad ktorym aktualnie pracuje wezel po stworzeniu bloku
-                    confirmedBlock = self.confirmBlock(currentEvent.node.nodeId, currentTime) # zatwierdzanie waznosci bloku stworzonego o 'numberOfConfirmationBlocks' blokow wczesniej (dla BTC 6)
-                    if confirmedBlock is not None:
-                        self.confirmTransactions(confirmedBlock, currentTime) # TODO uproszczenie ze czas zatwierdzenia transakcji dla wszystkich wezlow dzieje sie w tym samym momencie gdy stworzy sie potwierdzajacy blok w jednym wezle
-                        self.updateStaleBlocks(confirmedBlock, currentEvent.node.nodeId)
-
+                    currentNumberOfBlocks = self.handleNewBlock(currentNumberOfBlocks, currentTime, currentEvent)
                 case 'propagateBlock':
-                    if not self.nodes[currentEvent.node[0].nodeId].checkBlockDuplicate(currentEvent.block):  # jezeli tego bloku nie ma w blockchainie wezla jeszcze to dodaj i propaguj dalej
-                        self.nodes[currentEvent.node[0].nodeId].blockchain.blockList.append(currentEvent.block)
-                        self.nodes[currentEvent.node[0].nodeId].availableTransactions = self.updateAvailableTransactions(currentEvent.block, currentEvent.node[0].availableTransactions)
-                        self.nodes[currentEvent.node[0].nodeId].updateUsedTransactions(currentEvent.block)
-                        if self.nodes[currentEvent.node[0].nodeId].nodeType == 'miner':
-                            if currentEvent.node[0].hashWorkingBlock is None or currentEvent.node[0].blockchain.calculateBlockchainLength(currentEvent.block) > currentEvent.node[0].blockchain.calculateBlockchainLength(currentEvent.node[0].hashWorkingBlock):  # zmienic wydarzenie nowego bloku tylko w momencie nowo dodany blok do blockchainu tworzy nowy najdluzszy lancuch
-                                self.queue.events.remove(self.findBlockEvent(self.nodes[currentEvent.node[0].nodeId]))  # znalezc w kolejce zdarzenie wykopania nowego bloku przez aktualnie badany wezel i je usunac
-                                self.queue.events.append(self.scheduleNewBlockEvent(currentTime, currentEvent.node[0]))  # dodac nowe zdarzenie wykopania bloku
-                                currentEvent.node[0].hashWorkingBlock = currentEvent.block  # zmiana aktualnego haszu bloku nad ktorym aktualnie pracuje wezel po stworzeniu bloku
-                        for neighbor in currentEvent.node[0].neighbors:
-                            self.queue.events.append(self.schedulePropagateBlockEvent(currentEvent.node, currentTime, currentEvent.block, neighbor))  # zdarzenie propagacji do kazdego sasiada
-
+                    self.handlePropagateBlock(currentEvent, currentTime)
                 case _:
                     print('INVALID EVENT TYPE OR EMPTY QUEUE')
 
+    # HANDLE FUNCTIONS
+    def handleNewTransaction(self, currentNumberOfTransactions, currentTime, currentEvent):
+        transaction = Transaction(currentNumberOfTransactions, currentTime, self.averageTransactionSize, currentEvent.node)
+        currentNumberOfTransactions += 1
+        self.nodes[currentEvent.node.nodeId].availableTransactions.append(transaction)  # dodac transakcje do availableTransactions danego wezla
+        for neighbor in currentEvent.node.neighbors:
+            self.queue.events.append(self.schedulePropagateTransactionEvent(currentEvent.node, currentTime, transaction, neighbor))  # zdarzenie propagacji do kazdego sasiada
+        self.queue.events.append(self.scheduleNewTransactionEvent(currentTime))  # nastepna transakcja
+        return currentNumberOfTransactions
+
+    def handlePropagateTransaction(self, currentEvent, currentTime):
+        if not self.nodes[currentEvent.node[0].nodeId].checkTransactionDuplicate(currentEvent.transaction):  # jezeli tej transakcji nie ma w wezle jeszcze to dodaj do dostepnych transakcji i propaguj dalej
+            self.nodes[currentEvent.node[0].nodeId].availableTransactions.append(currentEvent.transaction)
+            for neighbor in currentEvent.node[0].neighbors:
+                self.queue.events.append(self.schedulePropagateTransactionEvent(currentEvent.node, currentTime, currentEvent.transaction, neighbor))  # zdarzenie propagacji do kazdego sasiada
+
+    def handleNewBlock(self, currentNumberOfBlocks, currentTime, currentEvent):
+        block = Block(currentNumberOfBlocks, currentTime, self.blockMaxSize, currentEvent.node, currentEvent.node.hashWorkingBlock)
+        currentNumberOfBlocks += 1
+        block.fillWithTransactions(currentEvent.node.availableTransactions)  # zapelnia blok transakcjami i aktualizuje dostepne transakcje danego wezla
+        self.nodes[currentEvent.node.nodeId].updateUsedTransactions(block)
+        self.nodes[currentEvent.node.nodeId].blockchain.blockList.append(block)  # dodac block do blockchainu danego wezla
+        for neighbor in currentEvent.node.neighbors:
+            self.queue.events.append(self.schedulePropagateBlockEvent(currentEvent.node, currentTime, block, neighbor))
+        self.queue.events.append(self.scheduleNewBlockEvent(currentTime, currentEvent.node))  # wezel deklaruje kiedy stworzy nowy blok
+        currentEvent.node.hashWorkingBlock = block  # zmiana aktualnego haszu bloku nad ktorym aktualnie pracuje wezel po stworzeniu bloku
+        confirmedBlock = self.confirmBlock(currentEvent.node.nodeId, currentTime)  # zatwierdzanie waznosci bloku stworzonego o 'numberOfConfirmationBlocks' blokow wczesniej (dla BTC 6)
+        if confirmedBlock is not None:
+            self.confirmTransactions(confirmedBlock, currentTime)  # TODO uproszczenie ze czas zatwierdzenia transakcji dla wszystkich wezlow dzieje sie w tym samym momencie gdy stworzy sie potwierdzajacy blok w jednym wezle
+            self.updateStaleBlocks(confirmedBlock, currentEvent.node.nodeId)
+        return currentNumberOfBlocks
+
+    def handlePropagateBlock(self, currentEvent, currentTime):
+        if not self.nodes[currentEvent.node[0].nodeId].checkBlockDuplicate(currentEvent.block):  # jezeli tego bloku nie ma w blockchainie wezla jeszcze to dodaj i propaguj dalej
+            self.nodes[currentEvent.node[0].nodeId].blockchain.blockList.append(currentEvent.block)
+            self.nodes[currentEvent.node[0].nodeId].availableTransactions = self.updateAvailableTransactions(currentEvent.block, currentEvent.node[0].availableTransactions)
+            self.nodes[currentEvent.node[0].nodeId].updateUsedTransactions(currentEvent.block)
+            if self.nodes[currentEvent.node[0].nodeId].nodeType == 'miner':
+                if currentEvent.node[0].hashWorkingBlock is None or currentEvent.node[0].blockchain.calculateBlockchainLength(currentEvent.block) > currentEvent.node[0].blockchain.calculateBlockchainLength(currentEvent.node[0].hashWorkingBlock):  # zmienic wydarzenie nowego bloku tylko w momencie nowo dodany blok do blockchainu tworzy nowy najdluzszy lancuch
+                    self.queue.events.remove(self.findBlockEvent(self.nodes[currentEvent.node[0].nodeId]))  # znalezc w kolejce zdarzenie wykopania nowego bloku przez aktualnie badany wezel i je usunac
+                    self.queue.events.append(self.scheduleNewBlockEvent(currentTime, currentEvent.node[0]))  # dodac nowe zdarzenie wykopania bloku
+                    currentEvent.node[0].hashWorkingBlock = currentEvent.block  # zmiana aktualnego haszu bloku nad ktorym aktualnie pracuje wezel po stworzeniu bloku
+            for neighbor in currentEvent.node[0].neighbors:
+                self.queue.events.append(self.schedulePropagateBlockEvent(currentEvent.node, currentTime, currentEvent.block, neighbor))  # zdarzenie propagacji do kazdego sasiada
 
     # SIMULATION SUPPORTING FUNCTIONS
     def generateNodes(self):
